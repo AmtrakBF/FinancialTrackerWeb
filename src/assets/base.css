@@ -13,11 +13,29 @@
   --black50: rgba(49, 50, 65, .5);
   --black25: rgba(49, 50, 65, .25);
   --black10: rgba(49, 50, 65, .10);
-  --black5: rgba(49, 50, 65, .5);
+  --black5: rgba(49, 50, 65, .05);
+
+  --white100: #e9e9e9;
+  --white75: rgb(233, 233, 233, .75);
+  --white50: rgb(233, 233, 233, .5);
+  --white25: rgb(233, 233, 233, .25);
+  --white10: rgb(233, 233, 233, .10);
 
   --primary: #4153E0;
+  --primary75: rgb(66, 85, 224, .75);
+  --primary50: rgb(66, 85, 224, .50);
+  --primary25: rgb(66, 85, 224, .25);
+  --primary10: rgb(66, 85, 224, .10);
+
   --secondary: #8539ED;
+  --secondary75: rgb(133, 57, 237, .75);
+  --secondary50: rgb(133, 57, 237, .50);
+  --secondary25: rgb(133, 57, 237, .25);
+  --secondary10: rgb(133, 57, 237, .10);
+
   --error: #E0585F;
+  --error75: rgb(224, 88, 95, .75);
+  --error50: rgb(224, 88, 95, .5);
 
   --vt-c-indigo: #2c3e50;
 

@@ -1,30 +1,215 @@
-<script setup lang="ts">
-import Transaction from '../components/TransactionComponent.vue'
+<script lang="ts">
+import { defineComponent, toHandlers } from 'vue';
+import type { Transaction } from '@/models/Transaction';
+import SavingsAccountService from '@/services/SavingsAccountService';
+import UserService from '@/services/UserService';
+import type { User } from '@/models/User';
+import type { SavingsAccount as SavingsAccount } from '@/models/SavingsAccount';
+import TransactionComponent from '../components/TransactionComponent.vue'
+import LoginComponent from '../components/LoginComponent.vue'
+import AddTransactionComponent from '../components/AddTransactionComponent.vue'
+import AddTransferComponent from '../components/AddTransferComponent.vue'
+import TestComponent from '@/components/TestComponent.vue';
+
+const UserCookieName = 'UserCookie'
+
+export default defineComponent({
+
+    data() {
+        return {
+            transactions: [] as Transaction[],
+            user: {} as User,
+            savingsAccounts: [] as SavingsAccount[],
+            displaySavingsAccounts: [] as SavingsAccount[],
+            selectedAccount: {} as SavingsAccount,
+
+            isLoggedIn: false,
+            isTitleActive: false,
+            isProfileActive: false,
+            isAddMenuActive: false,
+            isAddTransactionCompActive: false,
+            isLoginCompActive: false,
+            isAddTransferCompActive: false
+        }
+    },
+    components: {
+        TransactionComponent,
+        LoginComponent,
+        AddTransactionComponent,
+        AddTransferComponent,
+        TestComponent
+    },
+    async created() {
+        this.UpdatePageState()
+    },
+    methods: {
+        async GetUserTransactionsAsync(savingsAccountId:string) {
+            try {
+                const result = await SavingsAccountService.GetUserTransactions(savingsAccountId)
+                this.transactions = result.data
+                this.SortDate()
+            } catch (error) {
+                console.log(error)
+            }
+        },
+
+        async GetSavingsAccountsAsync() {
+            try {
+                let result = await SavingsAccountService.GetUserSavingsAccounts()
+                this.savingsAccounts = result.data
+            } catch (error) {
+                console.log(error)
+            }
+        },
+
+        async GetUserAsync() {
+            try {
+                let result = await UserService.GetUser()
+                this.user = result.data
+                this.isLoggedIn = true
+            } catch (error) {
+                this.isLoginCompActive = true
+                this.isLoggedIn = false
+            }
+        },
+
+        async UpdatePageState() {
+            await this.GetUserAsync()
+            await this.GetSavingsAccountsAsync()
+
+            const userCookie = this.$cookies.get(UserCookieName)
+            if (userCookie != null) {
+                const accountId = userCookie.savingsAccountId
+                const account = this.savingsAccounts.find(x => x.id === accountId)
+                
+                if (account != undefined){
+                    this.SetCurrentAccount(account)
+                }
+            } else {
+                if (this.savingsAccounts.length > 0) {
+                    this.SetCurrentAccount(this.savingsAccounts[0])
+                }
+            }
+        },
+
+        SetCurrentAccount(account:SavingsAccount) {
+            this.displaySavingsAccounts = this.savingsAccounts.filter(x => x.id != account.id)
+            this.GetUserTransactionsAsync(account.id)
+            this.selectedAccount = account
+
+            this.RemoveUserCookie()
+            this.SetUserCookie()
+        },
+
+        SetUserCookie() {
+            this.$cookies.set(UserCookieName, {'savingsAccountId' : this.selectedAccount.id})
+        },
+
+        RemoveUserCookie() {
+            this.$cookies.remove(UserCookieName)
+        },
+
+        SortDate() {
+            this.transactions.forEach(transaction => {
+                let date = transaction.date + 'Z'
+                transaction.date = new Date(date);
+            });
+            this.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
+        },
+
+        CloseProfileDropdown() { 
+            this.isProfileActive = false
+        },
+        
+        CloseTitleDropdown() { 
+            this.isTitleActive = false
+        },
+
+        CloseAddMenu() { 
+            this.isAddMenuActive = false
+        },
+
+        CloseTransactionComponent() {
+            this.isAddTransactionCompActive = false
+            this.UpdatePageState()
+        },
+        
+        CloseTransferComponent() {
+            this.isAddTransferCompActive = false
+            this.UpdatePageState()
+        },
+
+        CloseLoginComponent() {
+            this.isLoginCompActive = false
+            this.UpdatePageState()
+        },
+    },
+})
+
 </script>
 
 <template>
     <div class="flex-container">
         <div class="flex-header">
             <img src="/atbfLogo.png" width="48">
-            <div class="flex-header-title">
-                <h4>$5,003.33</h4>
-                <h3>Wallet</h3>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="30">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
+
+            <div class="header-title">
+                <div class="title-dropdown" @click="isTitleActive = !isTitleActive">
+                    <h4>${{ selectedAccount.balance }}</h4>
+                    <div class="title-dropdown-wrapper" v-click-outside="CloseTitleDropdown">
+                        <div class="dropdown-button">
+                            <h3> {{ selectedAccount.name }}</h3>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="30">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </div>
+                        <div class="dropdown-content" :class="{'display-dropdown': isTitleActive}">
+                            <h5 v-for="savingsAccount in displaySavingsAccounts" @click="SetCurrentAccount(savingsAccount)">{{ savingsAccount.name }}</h5>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <h5>Riley</h5>
+            
+            <div class="header-profile">
+                <div class="profile-dropdown">
+                    <div class="profile-dropdown-wrapper" v-if="isLoggedIn" v-click-outside="(CloseProfileDropdown)" @click="isProfileActive = !isProfileActive">
+                        <div class="dropdown-button">
+                            <h5>{{ user.firstName }}</h5>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="20">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </div>
+                        <div class="dropdown-content" :class="{'display-dropdown': isProfileActive}" id="profile-dropdown-content">
+                            <h5>Settings</h5>
+                            <h5>Logout</h5>
+                        </div>
+                    </div>
+                    <div v-else class="dropdown-button" @click="isLoginCompActive = true">
+                        <h5>Login</h5>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="flex-body">
-            <Transaction date="06/28/2023" description="Hannaford ToGo Order" amount="$202.56" transaction-type="withdraw"/>
-            <Transaction date="06/28/2023" description="Gas" amount="$22.43" transaction-type="withdraw"/>
-            <Transaction date="06/26/2023" description="Safe Transfer" amount="$250.00" transaction-type="transfer"/>
-            <Transaction date="06/26/2023" description="Paycheck" amount="$287.00" transaction-type="deposit"/>
+            <!-- <TestComponent /> -->
+            <TransactionComponent class="transaction" v-for="transaction in transactions" :key="transaction.id" :transaction="transaction" @click="console.log('PENcil')"/>
+            <AddTransactionComponent v-if="isAddTransactionCompActive" @isDisplayed="CloseTransactionComponent" :account="selectedAccount"/>
+            <AddTransferComponent v-if="isAddTransferCompActive" @isDisplayed="CloseTransferComponent" :account="selectedAccount" :accounts="displaySavingsAccounts"/>
+            <LoginComponent v-if="isLoginCompActive" @isDisplayed="CloseLoginComponent" @getUser="(x) => user = x"/>
         </div>
 
-        <div class="absolute-button-add">
-            <img src="../components/imgs/plus.png" width="48" style="display: block;">
+        <div class="button-add" v-click-outside="(CloseAddMenu)" @click="isAddMenuActive = !isAddMenuActive">
+            <div class="dropdown-button">
+                <div class="absolute-button-add">
+                    <img src="../components/imgs/plus.png" width="48" style="display: block;">
+                </div>
+            </div>
+            <div class="dropdown-content" id="add-menu" :class="{'display-dropdown': isAddMenuActive}">
+                <h5>Account</h5>
+                <h5 @click="isAddTransferCompActive = true">Transfer</h5>
+                <h5 @click="isAddTransactionCompActive = true">Transaction</h5>
+            </div>
         </div>
 
         <div class="flex-footer">
@@ -75,20 +260,75 @@ import Transaction from '../components/TransactionComponent.vue'
     border-bottom: 1px solid var(--black10);
 }
 
-.flex-header-title {
+.header-title {
     flex: 2;
+}
+
+.title-dropdown, .dropdown-button { 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.title-dropdown-wrapper, .profile-dropdown-wrapper {
+    position: relative;
+
+    border: 1px solid white;
+
+    padding: 8px;
+
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.flex-header h5 {
-    color: var(--black100);
+.profile-dropdown-wrapper {
+    min-width: 136px;
 }
 
-.flex-header-title h4 {
-    padding-right: 32px;
+.dropdown-button:hover {
+    cursor: pointer;
+}
+
+.title-dropdown h4 {
     color: var(--primary);
+    padding-right: 32px;
+}
+
+.dropdown-content {
+    position: absolute;
+    top: 4.05em;
+
+    display: none;
+    background-color: white;
+    min-width: 100%;
+
+    border: 1px solid var(--black25);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.display-dropdown {
+    display: block;
+}
+
+#profile-dropdown-content {
+    top: 3.5em;
+}
+
+.dropdown-content h5 {
+    padding: 24px;
+}
+
+.dropdown-content h5:hover {
+    background-color: var(--black25);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.flex-header h5 {
+    color: var(--black100);
 }
 
 .flex-body {
@@ -97,26 +337,8 @@ import Transaction from '../components/TransactionComponent.vue'
     flex: 1;
 }
 
-.transaction-container {
-    margin: 16px 32px;
-    padding: 20px 16px;
-    display: flex;
-
-    align-items: center;
-    justify-content: space-between;
-
-    background-color: var(--black10);
-    border-radius: 15px;
-}
-
-.transaction-group1 {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.transaction-group1 p {
-    padding-left: 64px;
+.transaction:hover {
+    cursor: pointer;
 }
 
 .flex-footer
@@ -148,13 +370,37 @@ import Transaction from '../components/TransactionComponent.vue'
     width: 80px;
 }
 
-.absolute-button-add {
+
+.button-add {
     position: absolute;
     bottom: 126px;
     right: 214px;
+    width: 150px;
 
+    user-select: none;
+}
+
+.absolute-button-add {
     background-image: linear-gradient(to right, var(--primary), var(--secondary));
+
+    width: 64px;
+    height: 64px;
+
+    margin: auto;
+
     border-radius: 50%;
     padding: 8px;
+}
+
+.absolute-button-add:hover {
+    cursor: pointer;
+}
+
+#add-menu {
+    top: -16em;
+}
+
+.displayAddTransactionComponent {
+    display: block;
 }
 </style>

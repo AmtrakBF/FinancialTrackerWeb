@@ -1,14 +1,9 @@
-export enum TransactionType {
-    Deposit,
-    Withdrawal,
-    Transfer
-}
-
 export interface Transaction {
-    Id: string,
-    SavingsAccountId: string,
-    TransactionType: TransactionType,
-    Description: string,
-    Amount: string,
-    Date: Date
+    id: string,
+    savingsAccountId: string,
+    transactionType: string,
+    description: string,
+    amount: string,
+    newBalance: string,
+    date: Date
 }
