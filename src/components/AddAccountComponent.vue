@@ -1,7 +1,6 @@
 <script lang="ts">
-import type { SavingsAccount } from '@/models/SavingsAccount';
 import SavingsAccountService from '@/services/SavingsAccountService';
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent } from 'vue';
 import DropDownComponent from './common/DropDownComponent.vue';
 import InputBoxComponent from './common/InputBoxComponent.vue';
 import InputAreaComponent from './common/InputAreaComponent.vue';
@@ -9,9 +8,6 @@ import ButtonComponent from './common/ButtonComponent.vue';
 
 export default defineComponent({
 
-    props: {
-        account: {type: Object as PropType<SavingsAccount>, required: true},
-    },
     components: {
         DropDownComponent,
         InputAreaComponent,
@@ -20,25 +16,16 @@ export default defineComponent({
     },
     data() {
         return {
-            amount: '',
-            types: [
-                {id: 0, value: "Deposit" },
-                {id: 1, value: "Withdraw" },
-            ],
-            type: {id: 0, value: "Deposit"},
-            description: '',
-            isDropDownActive: false,
+            name: '',
+            balance: '0.00',
         }
     },
     methods: {
         submitForm() {
-            SavingsAccountService.PostTransaction(this.account.id, this.type.id, this.amount, this.description)
+            SavingsAccountService.PostAccount(this.name, this.balance)
             .then( () => this.$emit('isDisplayed', false))
             .catch(error => console.log(error))
         },
-        closeDropDownMenu() {
-            this.isDropDownActive = false
-        }
     }
 })
 </script>
@@ -48,25 +35,17 @@ export default defineComponent({
         <div class="wrapper">
             <div class="container">
                 <div class="header">
-                    <h2>Add Transaction</h2>
+                    <h2>New Account</h2>
                     <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
                 <div class="content">
                     <div class="input-box">
-                        <h5>Account: </h5>
-                        <InputBoxComponent class="input-comp" :default-value="account.name" :is-disabled="true"/>
+                        <h5>Name: </h5>
+                        <InputBoxComponent class="input-comp" @onUpdate="newValue => name = newValue"/>
                     </div>
                     <div class="input-box">
-                        <h5>Type:</h5>
-                        <DropDownComponent :values="types" preview-key="value" key="id" @onClick="newType => type = newType"/>
-                    </div>
-                    <div class="input-box">
-                        <h5>Amount:</h5>
-                        <InputBoxComponent class="input-comp" @onUpdate="newValue => amount = newValue"/>
-                    </div>
-                    <div class="input-box">
-                        <h5>Description:</h5>
-                        <InputAreaComponent class="input-comp" @onUpdate="newValue => description = newValue"/>
+                        <h5>Initial Balance:</h5>
+                        <InputBoxComponent class="input-comp" :default-value="balance" @onUpdate="newValue => balance = newValue"/>
                     </div>
                 </div>
                 <div class="submit-buttons">

@@ -10,6 +10,8 @@ import LoginComponent from '../components/LoginComponent.vue'
 import AddTransactionComponent from '../components/AddTransactionComponent.vue'
 import AddTransferComponent from '../components/AddTransferComponent.vue'
 import TestComponent from '@/components/TestComponent.vue';
+import AddAccountComponent from '@/components/AddAccountComponent.vue';
+import SettingsComponent from '@/components/SettingsComponent.vue'
 
 const UserCookieName = 'UserCookie'
 
@@ -29,7 +31,9 @@ export default defineComponent({
             isAddMenuActive: false,
             isAddTransactionCompActive: false,
             isLoginCompActive: false,
-            isAddTransferCompActive: false
+            isAddTransferCompActive: false,
+            isAddAccountCompActive: false,
+            isSettingsCompActive: false
         }
     },
     components: {
@@ -37,7 +41,9 @@ export default defineComponent({
         LoginComponent,
         AddTransactionComponent,
         AddTransferComponent,
-        TestComponent
+        TestComponent,
+        AddAccountComponent,
+        SettingsComponent
     },
     async created() {
         this.UpdatePageState()
@@ -45,8 +51,8 @@ export default defineComponent({
     methods: {
         async GetUserTransactionsAsync(savingsAccountId:string) {
             try {
-                const result = await SavingsAccountService.GetUserTransactions(savingsAccountId)
-                this.transactions = result.data
+                const response = await SavingsAccountService.GetUserTransactions(savingsAccountId)
+                this.transactions = response.data
                 this.SortDate()
             } catch (error) {
                 console.log(error)
@@ -55,8 +61,8 @@ export default defineComponent({
 
         async GetSavingsAccountsAsync() {
             try {
-                let result = await SavingsAccountService.GetUserSavingsAccounts()
-                this.savingsAccounts = result.data
+                let response = await SavingsAccountService.GetUserSavingsAccounts()
+                this.savingsAccounts = response.data
             } catch (error) {
                 console.log(error)
             }
@@ -64,12 +70,29 @@ export default defineComponent({
 
         async GetUserAsync() {
             try {
-                let result = await UserService.GetUser()
-                this.user = result.data
+                let response = await UserService.GetUser()
+                this.user = response.data
                 this.isLoggedIn = true
             } catch (error) {
                 this.isLoginCompActive = true
                 this.isLoggedIn = false
+            }
+        },
+
+        async Logout() {
+            try {
+                await UserService.Logout()
+                this.RemoveUserCookie()
+                
+                this.transactions = []
+                this.savingsAccounts = []
+                this.user = {} as User
+                this.displaySavingsAccounts = []
+                this.selectedAccount  = {} as SavingsAccount
+
+                this.UpdatePageState()
+            } catch (error) {
+                console.log(error)
             }
         },
 
@@ -117,18 +140,6 @@ export default defineComponent({
             this.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
         },
 
-        CloseProfileDropdown() { 
-            this.isProfileActive = false
-        },
-        
-        CloseTitleDropdown() { 
-            this.isTitleActive = false
-        },
-
-        CloseAddMenu() { 
-            this.isAddMenuActive = false
-        },
-
         CloseTransactionComponent() {
             this.isAddTransactionCompActive = false
             this.UpdatePageState()
@@ -143,6 +154,16 @@ export default defineComponent({
             this.isLoginCompActive = false
             this.UpdatePageState()
         },
+
+        CloseNewAccountComponent() {
+            this.isAddAccountCompActive = false
+            this.UpdatePageState()
+        },
+
+        CloseSettingsComponent() {
+            this.isSettingsCompActive = false
+            this.UpdatePageState()
+        }
     },
 })
 
@@ -156,7 +177,7 @@ export default defineComponent({
             <div class="header-title">
                 <div class="title-dropdown" @click="isTitleActive = !isTitleActive">
                     <h4>${{ selectedAccount.balance }}</h4>
-                    <div class="title-dropdown-wrapper" v-click-outside="CloseTitleDropdown">
+                    <div class="title-dropdown-wrapper" v-click-outside="() => isTitleActive = false">
                         <div class="dropdown-button">
                             <h3> {{ selectedAccount.name }}</h3>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="30">
@@ -172,7 +193,7 @@ export default defineComponent({
             
             <div class="header-profile">
                 <div class="profile-dropdown">
-                    <div class="profile-dropdown-wrapper" v-if="isLoggedIn" v-click-outside="(CloseProfileDropdown)" @click="isProfileActive = !isProfileActive">
+                    <div class="profile-dropdown-wrapper" v-if="isLoggedIn" v-click-outside="() => isProfileActive = false" @click="isProfileActive = !isProfileActive">
                         <div class="dropdown-button">
                             <h5>{{ user.firstName }}</h5>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="20">
@@ -180,8 +201,8 @@ export default defineComponent({
                             </svg>
                         </div>
                         <div class="dropdown-content" :class="{'display-dropdown': isProfileActive}" id="profile-dropdown-content">
-                            <h5>Settings</h5>
-                            <h5>Logout</h5>
+                            <h5 @click="isSettingsCompActive = true">Settings</h5>
+                            <h5 @click="Logout">Logout</h5>
                         </div>
                     </div>
                     <div v-else class="dropdown-button" @click="isLoginCompActive = true">
@@ -192,21 +213,22 @@ export default defineComponent({
         </div>
 
         <div class="flex-body">
-            <!-- <TestComponent /> -->
             <TransactionComponent class="transaction" v-for="transaction in transactions" :key="transaction.id" :transaction="transaction" @click="console.log('PENcil')"/>
             <AddTransactionComponent v-if="isAddTransactionCompActive" @isDisplayed="CloseTransactionComponent" :account="selectedAccount"/>
             <AddTransferComponent v-if="isAddTransferCompActive" @isDisplayed="CloseTransferComponent" :account="selectedAccount" :accounts="displaySavingsAccounts"/>
+            <AddAccountComponent v-if="isAddAccountCompActive" @isDisplayed="CloseNewAccountComponent"/>
+            <SettingsComponent v-if="isSettingsCompActive" :user="user" @isDisplayed="CloseSettingsComponent"/>
             <LoginComponent v-if="isLoginCompActive" @isDisplayed="CloseLoginComponent" @getUser="(x) => user = x"/>
         </div>
 
-        <div class="button-add" v-click-outside="(CloseAddMenu)" @click="isAddMenuActive = !isAddMenuActive">
+        <div class="button-add" v-click-outside="() => isAddMenuActive = false" @click="isAddMenuActive = !isAddMenuActive">
             <div class="dropdown-button">
                 <div class="absolute-button-add">
                     <img src="../components/imgs/plus.png" width="48" style="display: block;">
                 </div>
             </div>
             <div class="dropdown-content" id="add-menu" :class="{'display-dropdown': isAddMenuActive}">
-                <h5>Account</h5>
+                <h5 @click="isAddAccountCompActive = true">Account</h5>
                 <h5 @click="isAddTransferCompActive = true">Transfer</h5>
                 <h5 @click="isAddTransactionCompActive = true">Transaction</h5>
             </div>

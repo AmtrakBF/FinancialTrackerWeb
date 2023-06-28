@@ -1,10 +1,13 @@
 <script lang="ts">
-import { defineComponent, type PropType } from 'vue';
+import { defineComponent, type Prop, type PropType } from 'vue';
 
 export default defineComponent({
 
     props: {
-        dropdownItems: {type: [] as PropType<string[]>, required: true},
+        values: {type: [] as PropType<any>, required: true},
+        key: {type: String, required: false},
+        previewKey: {type: String, required: true},
+        defaultValue: {type: {} as PropType<any>},
 
         color: { type: String, default: 'var(--black75)' },
         borderColor: { type: String, default: 'var(--primary)' },
@@ -18,12 +21,26 @@ export default defineComponent({
     data() {
         return {
             isDropDownActive: false,
-            selectedItem: ''
+            keyFound: false,
+            selectedItem: {} as any,
+            selectedItemPreview: ''
         }
     },
-    created() {
+    mounted() {
+        this.InitSelectedItem()
     },
     methods: {
+        InitSelectedItem() {
+            if (this.defaultValue == undefined) return
+
+            this.selectedItem = this.defaultValue
+            this.selectedItemPreview = this.selectedItem[this.previewKey]
+        },
+        SetSelectedItem(item:any) {
+            this.selectedItem = item
+            this.selectedItemPreview = item[this.previewKey]
+            this.$emit('onClick', item)
+        },
         CloseDropDownMenu() {
             this.isDropDownActive = false
         }
@@ -39,13 +56,15 @@ export default defineComponent({
     '--disabled-bg-color' : disabledBackgroundColor,
     '--focus-border-color' : focusBorderColor,
     '--border-color' : borderColor}" :disabled="isDisabled">
-        <p>{{selectedItem}}</p>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="19" height="19">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
+        <p>{{selectedItemPreview}}</p>
+        <div style="padding: 0px 8px;">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+        </div>
         <div class="dropdown" :class="{'dropdown-active': isDropDownActive}">
-            <div class="dropdown-item" v-for="item in dropdownItems" @click="selectedItem = item">
-                <p>{{item}}</p>
+            <div class="dropdown-item" v-for="item in values" :key="key" @click="SetSelectedItem(item)">
+                <p>{{item[previewKey]}}</p>
             </div>
         </div>
     </div>
@@ -64,10 +83,9 @@ export default defineComponent({
     position: relative;
     flex: 2;
 
-    width: 100%;
-    height: 40px;
+    min-height: 39px;
+    max-height: 39px;
 
-    padding: 8px;
     font-size: 16px;
     
     color: var(--text-color);
@@ -79,6 +97,10 @@ export default defineComponent({
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.dropdown-container p {
+    padding: 8px;
 }
 
 .dropdown-container:hover {
@@ -101,7 +123,6 @@ export default defineComponent({
 }
 
 .dropdown-item {
-    padding: 8px;
     border-radius: 10px;
     background-color: var(--background-color);
 }

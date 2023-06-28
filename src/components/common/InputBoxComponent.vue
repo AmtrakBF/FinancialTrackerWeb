@@ -4,6 +4,10 @@ import { defineComponent} from 'vue';
 export default defineComponent({
 
     props: {
+        inputType: { type: String, default: 'text' },
+        defaultValue: String,
+        autoComplete: { type: String, default: 'on' },
+
         color: { type: String, default: 'var(--black75)' },
         borderColor: { type: String, default: 'var(--primary)' },
         backgroundColor: { type: String, default: 'rgb(255, 255, 255, .9)' },
@@ -11,6 +15,11 @@ export default defineComponent({
         disabledBackgroundColor: { type: String, default: 'var(--black5)' },
 
         isDisabled: { type: Boolean, default: false }
+    },
+    mounted() {
+        if (this.defaultValue != undefined) {
+            this.data = this.defaultValue
+        }
     },
     data() {
         return {
@@ -27,7 +36,7 @@ export default defineComponent({
     '--disabled-bg-color' : disabledBackgroundColor,
     '--focus-border-color' : focusBorderColor,
     '--border-color' : borderColor}">
-        <input type="text" :disabled="isDisabled">
+        <input :type="inputType" v-model="data" @input="$emit('onUpdate', data)" :autocomplete="autoComplete" :disabled="isDisabled">
     </div>
 </template>
 
@@ -43,7 +52,6 @@ export default defineComponent({
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 16px;
 }
 
 #input-box input {

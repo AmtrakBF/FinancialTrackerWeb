@@ -28,6 +28,11 @@ export default(
                 { accountId, receiverAccountId, transferAmount, description, loginRequest: { email, password }},
                 { withCredentials: true }
             )
+        },
+
+        PostAccount(accountName:string, initialBalance:string) {
+            return axios.post<SavingsAccount>('SavingsAccount/OpenAccount', 
+                { accountName, initialBalance},{ withCredentials: true })
         }
     }
 )

@@ -1,6 +1,8 @@
 <script lang="ts">
 import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
+import InputBoxComponent from './common/InputBoxComponent.vue';
+import ButtonComponent from './common/ButtonComponent.vue';
 
 export default defineComponent({
 
@@ -9,6 +11,10 @@ export default defineComponent({
             email: "",
             password: ""
         }
+    },
+    components: {
+        InputBoxComponent,
+        ButtonComponent
     },
     methods: {
         Login() {
@@ -36,20 +42,16 @@ export default defineComponent({
                 <div class="content">
                     <div class="input-box">
                         <h5>Email: </h5>
-                        <input type="text" v-model="email">
+                        <InputBoxComponent class="input-box-comp" @onUpdate="newValue => email = newValue"/>
                     </div>
                     <div class="input-box">
                         <h5>Password:</h5>
-                        <input type="password" v-model="password">
+                        <InputBoxComponent class="input-box-comp" inputType="password" @onUpdate="newValue => password = newValue"/>
                     </div>
                 </div>
                 <div class="submit-buttons">
-                    <div class="button">
-                        <h6>Register</h6>
-                    </div>
-                    <div class="button" @click="Login">
-                        <h6>Login</h6>
-                    </div>
+                    <ButtonComponent title="Register" @OnClick=""/>
+                    <ButtonComponent title="Login" @OnClick="Login"/>
                 </div>
             </div>
         </div>
@@ -81,6 +83,7 @@ body {
 
     border-radius: 10px;
 }
+
 .container {
     background-image: linear-gradient(to right, var(--primary25), var(--secondary25));
     border: 1px solid var(--black100);
@@ -133,21 +136,9 @@ body {
     text-align: center;
 }
 
-.input-box input {
+.input-box-comp {
     flex: 2;
     width: 100%;
-    padding: 8px;
-    font-size: 16px;
-    
-    color: var(--black75);
-    background-color: rgb(255, 255, 255, .9);
-
-    border-radius: 10px;
-    border: 1px solid var(--primary);
-}
-
-.input-box input:focus {
-    outline-color: var(--secondary);
 }
 
 .submit-buttons {
@@ -157,27 +148,5 @@ body {
 
     flex-direction: row;
     padding: 20px;
-}
-
-.button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    background-color: var(--white25);
-
-    border: 1px solid var(--black75);
-    border-radius: 10px;
-
-    margin: 0px 64px;
-}
-
-.button:hover {
-    cursor: pointer;
-    background-image: linear-gradient(to left, var(--primary), var(--secondary));
-}
-
-.button h6 {
-    padding: 8px 16px;
 }
 </style>

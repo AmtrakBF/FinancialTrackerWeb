@@ -17,7 +17,7 @@ export default defineComponent({
     },
     methods: {
         OnClick() {
-            this.$emit('OnClick')
+            this.$emit('onClick')
         },
     }
 })
@@ -45,6 +45,8 @@ export default defineComponent({
 
     flex-direction: row;
     padding: 20px;
+
+    width: 100%;
 }
 
 #button {
@@ -55,6 +57,7 @@ export default defineComponent({
     --focus-border-color: black;
     --border-color: black;
 
+    width: 100%;
 
     display: flex;
     justify-content: center;
