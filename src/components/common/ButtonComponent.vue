@@ -68,8 +68,6 @@ export default defineComponent({
 
     border: 1px solid var(--border-color);
     border-radius: 10px;
-
-    margin: 0px 64px;
 }
 
 #button:hover {

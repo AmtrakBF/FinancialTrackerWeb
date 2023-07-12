@@ -4,6 +4,7 @@ import ButtonComponent from './common/ButtonComponent.vue';
 import DropDownComponent from './common/DropDownComponent.vue';
 import InputAreaComponent from './common/InputAreaComponent.vue';
 import InputBoxComponent from './common/InputBoxComponent.vue';
+import InputBoxComp from './InputRowComponent.vue';
 
 
 export default defineComponent({
@@ -17,25 +18,30 @@ export default defineComponent({
         ButtonComponent,
         DropDownComponent,
         InputAreaComponent,
-        InputBoxComponent
+        InputBoxComponent,
+        InputBoxComp
     }
 })
 
 </script>
 
 <template>
-        <ButtonComponent title="Test Button1" @OnClick="() => showOtherButton = true"/>
-        <ButtonComponent title="Test Button2" color="brown" @OnClick="() => showOtherButton = true"/>
-        <ButtonComponent title="Test Button3" focus-border-color="pink" @OnClick="() => showOtherButton = true"/>
-        <ButtonComponent title="Test Button4" @OnClick="() => showOtherButton = true"/>
-        <ButtonComponent v-if="showOtherButton" title="Other Button" @OnClick="() => showOtherButton = true"/>
-
-        <div style="width: 20%; display: flex; justify-content: space-around;">
-            <h4 style="flex: 1;">Type: </h4>
-            <DropDownComponent style="flex: 2;" :dropdownItems="['Deposit', 'Withdraw', 'Transfer']"/>
-        </div>
-        <InputAreaComponent/>
-        <InputBoxComponent focus-border-color="yellow"/>
-        <InputBoxComponent focus-border-color="orange"/>
-        <InputBoxComponent focus-border-color="green"/>
+    <InputBoxComp class="input-box-comp">
+        <InputBoxComponent class="input-comp" place-holder="First Name"/>
+        <InputBoxComponent class="input-comp" place-holder="Last Name"/>
+    </InputBoxComp>
 </template>
+
+<style scoped>
+
+.input-comp {
+    flex: 1;
+    padding-left: 16px;
+}
+
+.input-box-comp {
+    width: 80%;
+    margin: auto;
+}
+
+</style>

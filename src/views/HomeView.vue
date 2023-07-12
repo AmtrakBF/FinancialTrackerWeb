@@ -106,7 +106,11 @@ export default defineComponent({
                 const account = this.savingsAccounts.find(x => x.id === accountId)
                 
                 if (account != undefined){
-                    this.SetCurrentAccount(account)
+                    this.SetCurrentAccount(account)    
+                } else {
+                    if (this.savingsAccounts.length > 0) {
+                        this.SetCurrentAccount(this.savingsAccounts[0])
+                    }
                 }
             } else {
                 if (this.savingsAccounts.length > 0) {
@@ -217,7 +221,7 @@ export default defineComponent({
             <AddTransactionComponent v-if="isAddTransactionCompActive" @isDisplayed="CloseTransactionComponent" :account="selectedAccount"/>
             <AddTransferComponent v-if="isAddTransferCompActive" @isDisplayed="CloseTransferComponent" :account="selectedAccount" :accounts="displaySavingsAccounts"/>
             <AddAccountComponent v-if="isAddAccountCompActive" @isDisplayed="CloseNewAccountComponent"/>
-            <SettingsComponent v-if="isSettingsCompActive" :user="user" @isDisplayed="CloseSettingsComponent"/>
+            <SettingsComponent v-if="isSettingsCompActive" :user="user" :accounts="savingsAccounts" @isDisplayed="CloseSettingsComponent"/>
             <LoginComponent v-if="isLoginCompActive" @isDisplayed="CloseLoginComponent" @getUser="(x) => user = x"/>
         </div>
 
@@ -228,9 +232,9 @@ export default defineComponent({
                 </div>
             </div>
             <div class="dropdown-content" id="add-menu" :class="{'display-dropdown': isAddMenuActive}">
-                <h5 @click="isAddAccountCompActive = true">Account</h5>
-                <h5 @click="isAddTransferCompActive = true">Transfer</h5>
                 <h5 @click="isAddTransactionCompActive = true">Transaction</h5>
+                <h5 @click="isAddTransferCompActive = true">Transfer</h5>
+                <h5 @click="isAddAccountCompActive = true">Account</h5>
             </div>
         </div>
 
@@ -247,6 +251,65 @@ export default defineComponent({
         </div>
     </div>    
 </template>
+
+<style>
+.body-global {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    background-color: var(--black25);
+    height: 100%;
+    width: 100%;
+
+    z-index: 1;
+}
+
+.wrapper-global {
+    width: 516px;
+    background-color: white;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
+    border-radius: 10px;
+}
+.container-global {
+    background-image: linear-gradient(to right, var(--primary25), var(--secondary25));
+    border: 1px solid var(--black100);
+
+    color: var(--black100);
+    border-radius: 10px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.header-global {
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+}
+
+.header-global img:hover {
+    cursor: pointer;
+}
+
+.content-global {
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+</style>
 
 <style scoped>
 ::-webkit-scrollbar {
@@ -325,6 +388,8 @@ export default defineComponent({
     display: none;
     background-color: white;
     min-width: 100%;
+
+    white-space:nowrap;
 
     border: 1px solid var(--black25);
     border-radius: 10px;

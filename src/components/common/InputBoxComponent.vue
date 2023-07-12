@@ -6,6 +6,7 @@ export default defineComponent({
     props: {
         inputType: { type: String, default: 'text' },
         defaultValue: String,
+        placeHolder: String,
         autoComplete: { type: String, default: 'on' },
 
         color: { type: String, default: 'var(--black75)' },
@@ -36,7 +37,7 @@ export default defineComponent({
     '--disabled-bg-color' : disabledBackgroundColor,
     '--focus-border-color' : focusBorderColor,
     '--border-color' : borderColor}">
-        <input :type="inputType" v-model="data" @input="$emit('onUpdate', data)" :autocomplete="autoComplete" :disabled="isDisabled">
+        <input :type="inputType" :placeholder="placeHolder" v-model="data" @input="$emit('onUpdate', data)" :autocomplete="autoComplete" :disabled="isDisabled">
     </div>
 </template>
 
@@ -64,10 +65,18 @@ export default defineComponent({
 
     border-radius: 10px;
     border: 1px solid var(--border-color);
+    border-top: 0px;
+    border-left: 0px;
+    border-right: 0px;
+
+    transition: .5s linear;
 }
 
 #input-box  input:focus {
-    outline-color: var(--focus-border-color);
+    outline-width: 0px;
+    
+    border-width: 1px;
+    border-color: var(--focus-border-color);
 }
 
 #input-box  input:disabled {

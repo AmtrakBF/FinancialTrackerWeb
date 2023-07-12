@@ -32,14 +32,14 @@ export default defineComponent({
 </script>
 
 <template>
-    <body>
-        <div class="wrapper">
-            <div class="container">
-                <div class="header">
+    <body class="body-global">
+        <div class="wrapper-global">
+            <div class="container-global">
+                <div class="header-global">
                     <h2>Login</h2>
                     <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
-                <div class="content">
+                <div class="content-global">
                     <div class="input-box">
                         <h5>Email: </h5>
                         <InputBoxComponent class="input-box-comp" @onUpdate="newValue => email = newValue"/>
@@ -59,68 +59,11 @@ export default defineComponent({
 </template>
 
 <style scoped>
-body {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    
-    background-color: var(--black25);
-    height: 100%;
-    width: 100%;
 
-    z-index: 1;
-}
-
-.wrapper {
-    width: 516px;
-    background-color: white;
-
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    border-radius: 10px;
-}
-
-.container {
-    background-image: linear-gradient(to right, var(--primary25), var(--secondary25));
-    border: 1px solid var(--black100);
-
-    color: var(--black100);
-    border-radius: 10px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
-
-.header {
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    width: 100%;
-}
-
-.header img:hover {
-    cursor: pointer;
-}
-
-.header h2 {
+.header-global h2 {
     flex: 2;
     display: flex;
     justify-content: center;
-}
-
-.content {
-    width: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
 }
 
 .input-box {

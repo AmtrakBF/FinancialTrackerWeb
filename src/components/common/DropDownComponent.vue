@@ -1,10 +1,10 @@
 <script lang="ts">
-import { defineComponent, type Prop, type PropType } from 'vue';
+import { defineComponent, type PropType } from 'vue';
 
 export default defineComponent({
 
     props: {
-        values: {type: [] as PropType<any>, required: true},
+        values: {type: Object as PropType<any>, required: true},
         key: {type: String, required: false},
         previewKey: {type: String, required: true},
         defaultValue: {type: {} as PropType<any>},
@@ -125,6 +125,7 @@ export default defineComponent({
 .dropdown-item {
     border-radius: 10px;
     background-color: var(--background-color);
+    min-height: 37px;
 }
 
 .dropdown-item:hover {

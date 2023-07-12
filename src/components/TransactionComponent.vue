@@ -27,7 +27,7 @@ export default defineComponent({
                 case 'Withdrawal' : this.amountColor = "#E0585F"; break
                 case 'Deposit' : this.amountColor = "#4153E0"; break
                 case 'Transfer In' : this.amountColor = "#8539ED"; break
-                case 'Transfer Out' : this.amountColor = "#E0585F"; break
+                case 'Transfer Out' : this.amountColor = "#ffa585"; break
                 default: this.amountColor = "#E0585F";
             }
         },

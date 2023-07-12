@@ -1,32 +1,41 @@
 <script lang="ts">
-import SavingsAccountService from '@/services/SavingsAccountService';
 import { defineComponent, type Prop, type PropType } from 'vue';
 import DropDownComponent from './common/DropDownComponent.vue';
 import InputBoxComponent from './common/InputBoxComponent.vue';
 import InputAreaComponent from './common/InputAreaComponent.vue';
 import ButtonComponent from './common/ButtonComponent.vue';
 import type { User } from '@/models/User';
+import type { SavingsAccount } from '@/models/SavingsAccount';
+import SavingsAccountService from '@/services/SavingsAccountService';
 
 export default defineComponent({
 
     props: {
-        user: { type: Object as PropType<User>, required: true }
+        user: { type: Object as PropType<User>, required: true },
+        accounts: { type: Object as PropType<SavingsAccount[]>, required: true}
     },
     components: {
-        DropDownComponent,
-        InputAreaComponent,
-        InputBoxComponent,
-        ButtonComponent
-    },
+    DropDownComponent,
+    InputAreaComponent,
+    InputBoxComponent,
+    ButtonComponent,
+},
     data() {
         return {
             localUser: {} as User,
             password: '',
             confirmPassword: '',
 
+            selectedAccount: {} as SavingsAccount,
+            newAccountName: 'Savings Account',
+            SavingsAccountNewNameKey: 0,
+            deleteAccountEmail: '',
+            deleteAccountPassword: '',
+
             isSettingsDisplayed: true,
-            isAccountSettingsDisplayed: false,
-            isSavingsAccountSettingsDisplayed: false
+            isProfileSettingsDisplayed: false,
+            isSavingsAccountSettingsDisplayed: false,
+            isConfirmDeleteAccountDisplayed: false,
         }
     },
     mounted() {
@@ -36,34 +45,42 @@ export default defineComponent({
         submitForm() {
             this.$emit('isDisplayed', false)
         },
+        SaveSavingsAccountDetails() {
+            SavingsAccountService.PatchSavingsAccountName(this.selectedAccount.id, this.newAccountName)
+            .then(_ => this.$emit('isDisplayed', false))
+        },
+        DeleteAccount() {
+            SavingsAccountService.DeleteAccount(this.selectedAccount.id, this.deleteAccountEmail, this.deleteAccountPassword)
+            .then(_ => this.$emit('isDisplayed', false))
+        }
     }
 })
 </script>
 
 <template>
-    <body>
-        <div class="wrapper">
-            <div class="container">
-                <div class="header">
+    <body class="body-global">
+        <div class="wrapper-global">
+            <div class="container-global">
+                <div class="header-global">
                     <h2>Settings</h2>
                     <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
-                <div class="content">
+                <div class="content-global">
                     <div class="buttons">
-                        <ButtonComponent title="Profile Settings" @onClick="isAccountSettingsDisplayed = true"/>
+                        <ButtonComponent title="Profile Settings" @onClick="isProfileSettingsDisplayed = true"/>
                         <ButtonComponent title="Savings Account Settings" @onClick="isSavingsAccountSettingsDisplayed = true"/>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="wrapper" v-if="isAccountSettingsDisplayed">
-            <div class="container">
-                <div class="header">
+        <div class="wrapper-global" v-if="isProfileSettingsDisplayed">
+            <div class="container-global">
+                <div class="header-global">
                     <h2>Profile Settings</h2>
                     <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
-                <div class="content">
+                <div class="content-global">
                     <div class="input-box">
                         <h5>First Name: </h5>
                         <InputBoxComponent class="input-comp" :default-value="user.firstName" @onUpdate="newValue => localUser.firstName = newValue"/>
@@ -86,35 +103,58 @@ export default defineComponent({
                     </div>
                 </div>
                 <div class="buttons-submit">
-                    <ButtonComponent title="Back" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="isAccountSettingsDisplayed = false; "/>
+                    <ButtonComponent title="Back" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="isProfileSettingsDisplayed = false; "/>
                     <ButtonComponent title="Add" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="submitForm"/>
                 </div>
             </div>
         </div>
 
-        <div class="wrapper" v-if="isSavingsAccountSettingsDisplayed">
-            <div class="container">
-                <div class="header">
+        <div class="wrapper-global" v-if="isSavingsAccountSettingsDisplayed">
+            <div class="container-global">
+                <div class="header-global">
                     <h2>Savings Account Settings</h2>
                     <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
-                <div class="content">
+                <div class="content-global">
                     <div class="input-box">
                         <h5>Select Account: </h5>
-                        <InputBoxComponent class="input-comp" :default-value="user.firstName" @onUpdate="newValue => localUser.firstName = newValue"/>
+                        <DropDownComponent :values="accounts" key="id" preview-key="name" @onClick="newAccount => { selectedAccount = newAccount; SavingsAccountNewNameKey++} "/>
                     </div>
                     <div class="input-box">
                         <h5>Name: </h5>
-                        <InputBoxComponent class="input-comp" :default-value="user.lastName" @onUpdate="newValue => localUser.lastName = newValue"/>
+                        <InputBoxComponent class="input-comp" :default-value="selectedAccount.name" :key="SavingsAccountNewNameKey" @onUpdate="newValue => newAccountName = newValue"/>
                     </div>
-                    <div class="input-box">
-                        <h5>Delete: </h5>
-                        <InputBoxComponent class="input-comp" :default-value="user.email" @onUpdate="newValue => localUser.email = newValue"/>
-                    </div>
+                    
                 </div>
                 <div class="buttons-submit">
+                    <ButtonComponent title="Delete Account" background-color="var(--error50)" hover-background-color="var(--error)" 
+                    @onClick="isConfirmDeleteAccountDisplayed = true, isSavingsAccountSettingsDisplayed = false"/>
                     <ButtonComponent title="Back" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="isSavingsAccountSettingsDisplayed = false"/>
-                    <ButtonComponent title="Add" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="submitForm"/>
+                    <ButtonComponent title="Save" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="SaveSavingsAccountDetails"/>
+                </div>
+            </div>
+        </div>
+
+        <div class="wrapper-global" v-if="isConfirmDeleteAccountDisplayed">
+            <div class="container-global">
+                <div class="header-global">
+                    <h3>Confirm Delete '{{ selectedAccount.name }}'</h3>
+                    <img @click="isConfirmDeleteAccountDisplayed = false, isSavingsAccountSettingsDisplayed = true" src="./imgs/x-icon.png" height="32" width="32">
+                </div>
+                <div class="content-global">
+                    <div class="input-box">
+                        <h5>Confirm Email: </h5>
+                        <InputBoxComponent class="input-comp" @onUpdate="newValue => deleteAccountEmail = newValue"/>
+                    </div>
+                    <div class="input-box">
+                        <h5>Confirm Password: </h5>
+                        <InputBoxComponent class="input-comp" input-type="password" @onUpdate="newValue => deleteAccountPassword = newValue"/>
+                    </div>
+                    <div class="buttons-submit">
+                        <ButtonComponent title="Back" background-color="var(--error50)" hover-background-color="var(--error)" 
+                        @onClick="isSavingsAccountSettingsDisplayed = true, isConfirmDeleteAccountDisplayed = false"/>
+                        <ButtonComponent title="Save" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="DeleteAccount"/>
+                    </div>
                 </div>
             </div>
         </div>
@@ -122,63 +162,6 @@ export default defineComponent({
 </template>
 
 <style scoped>
-body {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    background-color: var(--black25);
-    height: 100%;
-    width: 100%;
-
-    z-index: 1;
-}
-
-.wrapper {
-    width: 516px;
-    background-color: white;
-
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    border-radius: 10px;
-}
-.container {
-    background-image: linear-gradient(to right, var(--primary25), var(--secondary25));
-    border: 1px solid var(--black100);
-
-    color: var(--black100);
-    border-radius: 10px;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-}
-
-.header {
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    width: 100%;
-}
-
-.header img:hover {
-    cursor: pointer;
-}
-
-.content {
-    width: 100%;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
 .input-box {
     display: flex;
     justify-content: center;
@@ -199,9 +182,11 @@ body {
 
 .buttons-submit {
     position: relative;
-    width: fit-content;
-
     display: flex;
+
+    width: fit-content;
+    margin: auto;
+    white-space: nowrap;
 }
 
 .buttons {
