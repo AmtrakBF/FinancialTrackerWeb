@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent} from 'vue';
+import { defineComponent, type PropType} from 'vue';
 
 export default defineComponent({
 
@@ -14,9 +14,11 @@ export default defineComponent({
         backgroundColor: { type: String, default: 'rgb(255, 255, 255, .9)' },
         focusBorderColor: { type: String, default: 'var(--secondary)' },
         disabledBackgroundColor: { type: String, default: 'var(--black5)' },
+        alignText: { type: String, default: "left"},
 
         isDisabled: { type: Boolean, default: false }
     },
+    emits: ['onUpdate'],
     mounted() {
         if (this.defaultValue != undefined) {
             this.data = this.defaultValue
@@ -36,8 +38,11 @@ export default defineComponent({
     '--background-color' : backgroundColor,
     '--disabled-bg-color' : disabledBackgroundColor,
     '--focus-border-color' : focusBorderColor,
-    '--border-color' : borderColor}">
-        <input :type="inputType" :placeholder="placeHolder" v-model="data" @input="$emit('onUpdate', data)" :autocomplete="autoComplete" :disabled="isDisabled">
+    '--border-color' : borderColor,
+    '--alignment' : alignText}">
+        <div class="container">
+            <input :type="inputType" :placeholder="placeHolder" v-model="data" @input="$emit('onUpdate', data)" :autocomplete="autoComplete" :disabled="isDisabled">
+        </div>        
     </div>
 </template>
 
@@ -48,14 +53,17 @@ export default defineComponent({
     --disabled-bg-color: grey;
     --focus-border-color: black;
     --border-color: black;
+    --alignment: left;
+}
 
-
+.container {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
 }
 
-#input-box input {
+.container input {
     flex: 2;
     width: 100%;
     padding: 8px;
@@ -70,16 +78,17 @@ export default defineComponent({
     border-right: 0px;
 
     transition: .5s linear;
+    text-align: var(--alignment);
 }
 
-#input-box  input:focus {
+.container input:focus {
     outline-width: 0px;
     
     border-width: 1px;
     border-color: var(--focus-border-color);
 }
 
-#input-box  input:disabled {
+.container input:disabled {
     background-color: var(--disabled-bg-color);
 }
 </style>

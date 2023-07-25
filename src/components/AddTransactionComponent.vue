@@ -6,6 +6,8 @@ import DropDownComponent from './common/DropDownComponent.vue';
 import InputBoxComponent from './common/InputBoxComponent.vue';
 import InputAreaComponent from './common/InputAreaComponent.vue';
 import ButtonComponent from './common/ButtonComponent.vue';
+import type { ATBFError } from '@/models/ATBFError';
+import ErrorHandlingService from '@/services/ErrorHandlingService';
 
 export default defineComponent({
 
@@ -22,19 +24,33 @@ export default defineComponent({
         return {
             amount: '',
             types: [
-                {id: 0, value: "Deposit" },
-                {id: 1, value: "Withdraw" },
+                {id: 0, value: "Deposit / Add" },
+                {id: 1, value: "Withdraw / Subtract" },
             ],
-            type: {id: 0, value: "Deposit"},
+            type: {id: -1, value: "null"},
             description: '',
             isDropDownActive: false,
+
+            accountError: {name: 'AccountId', errors: []} as ATBFError,
+            typeError: {name: 'Type', errors: []} as ATBFError,
+            amountError: {name: 'Amount', errors: []} as ATBFError,
+            descriptionError: {name: 'Description', errors: []} as ATBFError,
+
+            domErrors: [] as ATBFError[],
         }
     },
+    mounted() {
+        this.domErrors = [ this.accountError, this.typeError, this.amountError, this.descriptionError ]
+    },
     methods: {
-        submitForm() {
-            SavingsAccountService.PostTransaction(this.account.id, this.type.id, this.amount, this.description)
-            .then( () => this.$emit('isDisplayed', false))
-            .catch(error => console.log(error))
+        async submitForm() {
+
+            try {
+                const response = await SavingsAccountService.PostTransaction(this.account.id, this.type.id, this.amount, this.description)
+                this.$emit('onSubmit', response.data)
+            } catch (error) {
+                ErrorHandlingService.GetErrors(this.domErrors, error)
+            }
         },
         closeDropDownMenu() {
             this.isDropDownActive = false
@@ -49,29 +65,57 @@ export default defineComponent({
             <div class="container-global">
                 <div class="header-global">
                     <h2>Add Transaction</h2>
-                    <img @click="$emit('isDisplayed', false)" src="./imgs/x-icon.png" height="32" width="32">
+                    <img @click="$emit('isDisplayed')" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
                 <div class="content-global">
-                    <div class="input-box">
-                        <h5>Account: </h5>
-                        <InputBoxComponent class="input-comp" :default-value="account.name" :is-disabled="true"/>
+                    <div class="input-container">
+                        <div class="input-row">
+                            <h5>Account: </h5>
+                            <InputBoxComponent class="input-comp" :default-value="account.name" :is-disabled="true"/>
+                        </div>
+                        <div class="input-row">
+                            <p></p>
+                            <span v-if="accountError.errors.length > 0">*{{ accountError.errors[0] }}</span>
+                        </div>
                     </div>
-                    <div class="input-box">
-                        <h5>Type:</h5>
-                        <DropDownComponent :values="types" preview-key="value" key="id" @onClick="newType => type = newType"/>
-                    </div>
-                    <div class="input-box">
-                        <h5>Amount:</h5>
-                        <InputBoxComponent class="input-comp" @onUpdate="newValue => amount = newValue"/>
-                    </div>
-                    <div class="input-box">
-                        <h5>Description:</h5>
-                        <InputAreaComponent class="input-comp" @onUpdate="newValue => description = newValue"/>
-                    </div>
+
+                    <div class="input-container">
+                        <div class="input-row">
+                            <h5>Type:</h5>
+                        <DropDownComponent :values="types" preview-key="value" id-key="id" @onClick="newType => type = newType"/>
+                        </div>
+                        <div class="input-row">
+                            <p></p>
+                            <span v-if="typeError.errors.length > 0">*{{ typeError.errors[0] }}</span>
+                        </div>
+                    </div> 
+
+                    <div class="input-container">
+                        <div class="input-row">
+                            <h5>Amount:</h5>
+                            <InputBoxComponent class="input-comp" @onUpdate="newValue => amount = newValue"/>
+                        </div>
+                        <div class="input-row">
+                            <p></p>
+                            <span v-if="amountError.errors.length > 0">*{{ amountError.errors[0] }}</span>
+                        </div>
+                    </div> 
+
+                    <div class="input-container">
+                        <div class="input-row">
+                            <h5>Description:</h5>
+                            <InputAreaComponent class="input-comp" place-holder="(optional)" @onUpdate="newValue => description = newValue"/>
+                        </div>
+                        <div class="input-row">
+                            <p></p>
+                            <span v-if="descriptionError.errors.length > 0">*{{ descriptionError.errors[0] }}</span>
+                        </div>
+                    </div> 
+
                 </div>
                 <div class="submit-buttons">
-                    <ButtonComponent title="Cancel" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="$emit('isDisplayed', false)"/>
-                    <ButtonComponent title="Add" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="submitForm"/>
+                    <ButtonComponent title="Cancel" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="$emit('isDisplayed')"/>
+                    <ButtonComponent title="Add" background-color="var(--primary25)" hover-background-color="var(--primary)" @onClick="submitForm()"/>
                 </div>
             </div>
         </div>
@@ -79,22 +123,26 @@ export default defineComponent({
 </template>
 
 <style scoped>
-.input-box {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.input-container {
     padding: 16px;
 }
 
-.input-box h5 {
-    flex: 1;
+.input-row {
+    display: grid;
+    justify-content: center;
+    align-items: center;
+
+    grid-template-columns: 160px 1fr;
+}
+
+.input-row h5 {
     padding: 0px 16px;
     text-align: center;
 }
 
-.input-comp{
-    flex: 2;
-    width: 100%;
+.input-row span {
+    color: var(--error);
+    font-weight: 500;
 }
 
 .submit-buttons {

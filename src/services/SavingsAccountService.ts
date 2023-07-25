@@ -5,9 +5,9 @@ import type { TransactionResponse } from "@/contracts/TransactionResponse"
 
 export default(
     {
-        GetUserTransactions(savingsAccountId:string){
+        GetUserTransactions(savingsAccountId:string, dbOffset:number, dbRowLimit:number){
             return axios.get<Transaction[]>('SavingsAccount/Transactions', { 
-                params: { accountId: savingsAccountId }, 
+                params: { accountId: savingsAccountId, dbOffset, dbRowLimit }, 
                 withCredentials: true 
             })
         },
@@ -41,6 +41,11 @@ export default(
 
         DeleteAccount(accountId:string, email:string, password:string) {
             return axios.post('SavingsAccount/CloseAccount', { accountId, loginRequest: { email, password }}, { withCredentials: true })
+        },
+
+        PutTransaction(accountId:string, transactionId:string, date:Date, description:string) {
+            return axios.put('SavingsAccount/EditTransaction', 
+            { accountId, transactionId, date, description}, { withCredentials: true })
         }
     }
 )

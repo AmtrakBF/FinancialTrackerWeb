@@ -19,22 +19,18 @@ export default defineComponent({
     },
     mounted() {
         this.GetAmountDisplayColor()
-        this.FormatDate()
     },
     methods: {
         GetAmountDisplayColor() {
             switch(this.transaction?.transactionType) {
                 case 'Withdrawal' : this.amountColor = "#E0585F"; break
                 case 'Deposit' : this.amountColor = "#4153E0"; break
+                case 'TransferIn' : 
                 case 'Transfer In' : this.amountColor = "#8539ED"; break
+                case 'TransferOut' : 
                 case 'Transfer Out' : this.amountColor = "#ffa585"; break
                 default: this.amountColor = "#E0585F";
             }
-        },
-        FormatDate() {
-            let date =  this.transaction.date
-            this.time = date.getHours() + ":" + date.getMinutes()
-            this.date = (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear()
         }
     }
 })
@@ -43,13 +39,14 @@ export default defineComponent({
 <template>
     <div class="transaction-container">
         <div class="transaction-group1">
-            <h6>{{ date }}</h6>
-            <p id="transaction-type">{{ transaction.transactionType }}</p>
-            <p id="description">{{ transaction?.description }}</p>
+            <h5 style="border-right: 1px solid black; padding-right: 16px;">{{ transaction.date.toLocaleDateString() }}</h5>
+            <h5 id="description" style="padding-left: 16px;">{{ transaction?.description }}</h5>
         </div>
-        <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'Transfer Out'">-${{ transaction?.amount }}</h4>
-        <h4 :style="{ color: amountColor }" v-else>${{ transaction?.amount }}</h4>
-        <p>${{ transaction.newBalance }}</p>
+        <div style="padding-left: 16px;">
+            <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'Transfer Out'">- ${{ transaction?.amount }}</h4>
+            <h4 :style="{ color: amountColor }" v-else>+ ${{ transaction?.amount }}</h4>
+            <p style="text-align: center;">Balance ${{ transaction.newBalance }}</p>
+        </div>
     </div>
 </template>
 

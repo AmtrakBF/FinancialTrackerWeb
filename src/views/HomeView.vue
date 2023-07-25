@@ -1,10 +1,14 @@
 <script lang="ts">
-import { defineComponent, toHandlers } from 'vue';
-import type { Transaction } from '@/models/Transaction';
+import { defineComponent } from 'vue';
+
 import SavingsAccountService from '@/services/SavingsAccountService';
 import UserService from '@/services/UserService';
+
+import type { Transaction } from '@/models/Transaction';
 import type { User } from '@/models/User';
 import type { SavingsAccount as SavingsAccount } from '@/models/SavingsAccount';
+import type { ATBFError } from '@/models/ATBFError';
+
 import TransactionComponent from '../components/TransactionComponent.vue'
 import LoginComponent from '../components/LoginComponent.vue'
 import AddTransactionComponent from '../components/AddTransactionComponent.vue'
@@ -12,6 +16,9 @@ import AddTransferComponent from '../components/AddTransferComponent.vue'
 import TestComponent from '@/components/TestComponent.vue';
 import AddAccountComponent from '@/components/AddAccountComponent.vue';
 import SettingsComponent from '@/components/SettingsComponent.vue'
+import TransactionViewComponent from '@/components/TransactionViewComponent.vue'
+import ErrorHandlingService from '@/services/ErrorHandlingService';
+import ErrorComponent from '@/components/ErrorComponent.vue'
 
 const UserCookieName = 'UserCookie'
 
@@ -24,16 +31,26 @@ export default defineComponent({
             savingsAccounts: [] as SavingsAccount[],
             displaySavingsAccounts: [] as SavingsAccount[],
             selectedAccount: {} as SavingsAccount,
+            selectedTransaction: {} as Transaction,
 
-            isLoggedIn: false,
-            isTitleActive: false,
-            isProfileActive: false,
-            isAddMenuActive: false,
-            isAddTransactionCompActive: false,
-            isLoginCompActive: false,
-            isAddTransferCompActive: false,
-            isAddAccountCompActive: false,
-            isSettingsCompActive: false
+            genericErrorKey: 0,
+            genericError: { name: ErrorHandlingService.ErrorKeys.DefaultKey, errors:[] } as ATBFError,
+            domErrors: [] as ATBFError[],
+
+            atBottomOfPage: false,
+
+            booleans: {
+                isLoggedIn: false,
+                isTitleActive: false,
+                isProfileActive: false,
+                isAddMenuActive: false,
+                isAddTransactionDisplayed: false,
+                isLoginDisplayed: false,
+                isAddTransferDisplayed: false,
+                isAddAccountDisplayed: false,
+                isSettingsDisplayed: false,
+                isTransactionViewDisplayed: false
+            }
         }
     },
     components: {
@@ -43,20 +60,68 @@ export default defineComponent({
         AddTransferComponent,
         TestComponent,
         AddAccountComponent,
-        SettingsComponent
+        SettingsComponent,
+        TransactionViewComponent,
+        ErrorComponent
     },
     async created() {
-        this.UpdatePageState()
+        this.domErrors = [ this.genericError ]
+        await this.UpdatePageState()
+    },
+    watch: {
+        genericError() {
+            this.genericErrorKey++
+        },
+        selectedAccount(oldAccount:SavingsAccount, newAccount:SavingsAccount) {
+            if (oldAccount.id != newAccount.id){
+                this.transactions = []
+            }
+        }
+    },
+    errorCaptured(err:any, instance:any, info:string) {
+        if (err.message == "User session invalid" || err.message == 'Request failed with status code 401') {
+            this.booleans.isLoginDisplayed = true
+        }
+
+        console.log("CAUGHT")
+
+        this.genericError.errors = err.message
+        this.genericErrorKey++
+
+        return false
     },
     methods: {
         async GetUserTransactionsAsync(savingsAccountId:string) {
             try {
-                const response = await SavingsAccountService.GetUserTransactions(savingsAccountId)
-                this.transactions = response.data
-                this.SortDate()
+                const response = await SavingsAccountService.GetUserTransactions(savingsAccountId, this.transactions.length, 10)
+                response.data.forEach(x => {
+                    this.transactions.push(x)
+                    this.SetTransactionDate(x)
+                })
             } catch (error) {
-                console.log(error)
+                ErrorHandlingService.GetErrors(this.domErrors, error)
             }
+        },
+
+        async GetUpdatedTransactionsAsync(savingsAccountId:string) {
+            try {
+                const response = await SavingsAccountService.GetUserTransactions(savingsAccountId, 0, 15)
+                for (let x = response.data.length - 1; x >= 0; x--){
+                    let filter = this.transactions.filter(y => y.id === response.data[x].id)
+                    if (filter.length < 1) {
+                        this.SetTransactionDate(response.data[x])
+                        this.transactions.unshift(response.data[x])
+                    }
+                }
+            } catch (error) {
+                ErrorHandlingService.GetErrors(this.domErrors, error)
+            }
+        },
+
+        UpdateTransaction(newTransaction:Transaction) {
+            let index = this.transactions.findIndex(x => x.id === newTransaction.id)
+            this.SetTransactionDate(newTransaction)
+            this.transactions[index] = newTransaction
         },
 
         async GetSavingsAccountsAsync() {
@@ -64,7 +129,7 @@ export default defineComponent({
                 let response = await SavingsAccountService.GetUserSavingsAccounts()
                 this.savingsAccounts = response.data
             } catch (error) {
-                console.log(error)
+                ErrorHandlingService.GetErrors(this.domErrors, error)
             }
         },
 
@@ -72,10 +137,11 @@ export default defineComponent({
             try {
                 let response = await UserService.GetUser()
                 this.user = response.data
-                this.isLoggedIn = true
+                this.booleans.isLoggedIn = true
             } catch (error) {
-                this.isLoginCompActive = true
-                this.isLoggedIn = false
+                this.booleans.isLoginDisplayed = true
+                this.booleans.isLoggedIn = false
+                ErrorHandlingService.GetErrors(this.domErrors, error)
             }
         },
 
@@ -90,9 +156,9 @@ export default defineComponent({
                 this.displaySavingsAccounts = []
                 this.selectedAccount  = {} as SavingsAccount
 
-                this.UpdatePageState()
+                await this.UpdatePageState()
             } catch (error) {
-                console.log(error)
+                ErrorHandlingService.GetErrors(this.domErrors, error)
             }
         },
 
@@ -107,6 +173,7 @@ export default defineComponent({
                 
                 if (account != undefined){
                     this.SetCurrentAccount(account)    
+
                 } else {
                     if (this.savingsAccounts.length > 0) {
                         this.SetCurrentAccount(this.savingsAccounts[0])
@@ -121,11 +188,21 @@ export default defineComponent({
 
         SetCurrentAccount(account:SavingsAccount) {
             this.displaySavingsAccounts = this.savingsAccounts.filter(x => x.id != account.id)
-            this.GetUserTransactionsAsync(account.id)
+            this.GetUpdatedTransactionsAsync(account.id)
             this.selectedAccount = account
 
             this.RemoveUserCookie()
             this.SetUserCookie()
+        },
+
+        SetTransactionDate(transaction:Transaction) {
+            if (typeof(transaction.date) == typeof("")) {
+                if (transaction.date.toString()[transaction.date.toString().length - 1] != 'Z') {
+                    transaction.date = new Date(transaction.date + 'Z')
+                } else {
+                    transaction.date = new Date(transaction.date)
+                }
+            }
         },
 
         SetUserCookie() {
@@ -136,37 +213,84 @@ export default defineComponent({
             this.$cookies.remove(UserCookieName)
         },
 
-        SortDate() {
-            this.transactions.forEach(transaction => {
-                let date = transaction.date + 'Z'
-                transaction.date = new Date(date);
-            });
-            this.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
+        DisplayTransactionViewComponent(transaction:Transaction) {
+            this.booleans.isTransactionViewDisplayed = true;
+            this.selectedTransaction = transaction
         },
 
-        CloseTransactionComponent() {
-            this.isAddTransactionCompActive = false
-            this.UpdatePageState()
-        },
-        
-        CloseTransferComponent() {
-            this.isAddTransferCompActive = false
-            this.UpdatePageState()
+        CloseComponent(booleans:any, selectedBool:string) {
+            try{
+                booleans[selectedBool] = false
+            }
+            catch {}
         },
 
-        CloseLoginComponent() {
-            this.isLoginCompActive = false
-            this.UpdatePageState()
+        Redirect(route:string){
+            window.open(route)
         },
 
-        CloseNewAccountComponent() {
-            this.isAddAccountCompActive = false
-            this.UpdatePageState()
+        onScroll(e:any){
+            const clientHeight = e.target.clientHeight
+            const scrollHeight = e.target.scrollHeight
+            const scrollTop = e.target.scrollTop
+
+            if (scrollTop + clientHeight >= scrollHeight) {
+                this.GetUserTransactionsAsync(this.selectedAccount.id)
+                this.atBottomOfPage = true
+            } else {
+                this.atBottomOfPage = false
+            }
         },
 
-        CloseSettingsComponent() {
-            this.isSettingsCompActive = false
+        OnAddTransaction(response:{transaction:Transaction, savingsAccount:SavingsAccount}) {
+            if (response == undefined) {
+                return
+            }
+
+            this.SetTransactionDate(response.transaction)
+            this.transactions.unshift(response.transaction)
+            this.selectedAccount.balance = response.transaction.newBalance
+            this.booleans.isAddTransactionDisplayed = false
+        },
+
+        OnAddTransfer(response:{transferOut:Transaction, transferIn:Transaction}) {
+            if (response == undefined) {
+                return
+            }
+
+            this.SetTransactionDate(response.transferOut)
+            this.transactions.unshift(response.transferOut)
+            this.selectedAccount.balance = response.transferOut.newBalance
+            this.booleans.isAddTransferDisplayed = false
+        },
+
+        OnAddAccount(response:SavingsAccount) {
+            if (response == undefined) {
+                return
+            }
+
+            this.savingsAccounts.push(response)
+            this.SetCurrentAccount(response)
+            this.booleans.isAddAccountDisplayed = false
+        },
+
+        onAccountNameChange(response:SavingsAccount) {
+            if (response == undefined) {
+                return
+            }
+
+            let accountIndex = this.savingsAccounts.findIndex(x => x.id === response.id)
+            this.savingsAccounts[accountIndex] = response
+            if (this.selectedAccount.id == response.id) {
+                this.selectedAccount = response
+            }
+            this.booleans.isSettingsDisplayed = false
+        },
+
+        OnLogin(response:User) {
+            this.user = response
             this.UpdatePageState()
+            this.booleans.isLoginDisplayed = false
         }
     },
 })
@@ -179,16 +303,16 @@ export default defineComponent({
             <img src="/atbfLogo.png" width="48">
 
             <div class="header-title">
-                <div class="title-dropdown" @click="isTitleActive = !isTitleActive">
+                <div class="title-dropdown" @click="booleans.isTitleActive = !booleans.isTitleActive">
                     <h4>${{ selectedAccount.balance }}</h4>
-                    <div class="title-dropdown-wrapper" v-click-outside="() => isTitleActive = false">
+                    <div class="title-dropdown-wrapper" v-click-outside="() => booleans.isTitleActive = false">
                         <div class="dropdown-button">
                             <h3> {{ selectedAccount.name }}</h3>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="30">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </div>
-                        <div class="dropdown-content" :class="{'display-dropdown': isTitleActive}">
+                        <div class="dropdown-content" :class="{'display-dropdown': booleans.isTitleActive}">
                             <h5 v-for="savingsAccount in displaySavingsAccounts" @click="SetCurrentAccount(savingsAccount)">{{ savingsAccount.name }}</h5>
                         </div>
                     </div>
@@ -197,44 +321,60 @@ export default defineComponent({
             
             <div class="header-profile">
                 <div class="profile-dropdown">
-                    <div class="profile-dropdown-wrapper" v-if="isLoggedIn" v-click-outside="() => isProfileActive = false" @click="isProfileActive = !isProfileActive">
+                    <div class="profile-dropdown-wrapper" v-if="booleans.isLoggedIn" v-click-outside="() => booleans.isProfileActive = false"
+                         @click="booleans.isProfileActive = !booleans.isProfileActive">
                         <div class="dropdown-button">
                             <h5>{{ user.firstName }}</h5>
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6" width="20">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </div>
-                        <div class="dropdown-content" :class="{'display-dropdown': isProfileActive}" id="profile-dropdown-content">
-                            <h5 @click="isSettingsCompActive = true">Settings</h5>
+                        <div class="dropdown-content" :class="{'display-dropdown': booleans.isProfileActive}" id="profile-dropdown-content">
+                            <h5 @click="booleans.isSettingsDisplayed = true">Settings</h5>
                             <h5 @click="Logout">Logout</h5>
                         </div>
                     </div>
-                    <div v-else class="dropdown-button" @click="isLoginCompActive = true">
+                    <div v-else class="dropdown-button" @click="booleans.isLoginDisplayed = true">
                         <h5>Login</h5>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="flex-body">
-            <TransactionComponent class="transaction" v-for="transaction in transactions" :key="transaction.id" :transaction="transaction" @click="console.log('PENcil')"/>
-            <AddTransactionComponent v-if="isAddTransactionCompActive" @isDisplayed="CloseTransactionComponent" :account="selectedAccount"/>
-            <AddTransferComponent v-if="isAddTransferCompActive" @isDisplayed="CloseTransferComponent" :account="selectedAccount" :accounts="displaySavingsAccounts"/>
-            <AddAccountComponent v-if="isAddAccountCompActive" @isDisplayed="CloseNewAccountComponent"/>
-            <SettingsComponent v-if="isSettingsCompActive" :user="user" :accounts="savingsAccounts" @isDisplayed="CloseSettingsComponent"/>
-            <LoginComponent v-if="isLoginCompActive" @isDisplayed="CloseLoginComponent" @getUser="(x) => user = x"/>
+        <div class="flex-body" @scroll="onScroll">
+            <TransactionComponent class="transaction" v-for="transaction in transactions" :key="transaction.id" :transaction="transaction" 
+            @click="DisplayTransactionViewComponent(transaction)"/>
+
+            <AddTransactionComponent v-if="booleans.isAddTransactionDisplayed" @onSubmit="response => OnAddTransaction(response)" 
+            :account="selectedAccount" @isDisplayed="CloseComponent(booleans, 'isAddTransactionDisplayed')"/>
+
+            <AddTransferComponent v-if="booleans.isAddTransferDisplayed" @isDisplayed="CloseComponent(booleans, 'isAddTransferDisplayed')"
+            :account="selectedAccount" @onSubmit="response => OnAddTransfer(response)" :accounts="displaySavingsAccounts"/>
+
+            <AddAccountComponent v-if="booleans.isAddAccountDisplayed" @isDisplayed="CloseComponent(booleans, 'isAddAccountDisplayed')"
+            @onSubmit="response => OnAddAccount(response)"/>
+
+            <SettingsComponent v-if="booleans.isSettingsDisplayed" :user="user" :accounts="savingsAccounts" @isDisplayed="CloseComponent(booleans, 'isSettingsDisplayed')"
+            @onAccountNameChange="response => onAccountNameChange(response)"/>
+
+            <LoginComponent v-if="booleans.isLoginDisplayed" @onSubmit="response => OnLogin(response)"/>
+
+            <TransactionViewComponent v-if="booleans.isTransactionViewDisplayed" :transaction="selectedTransaction" 
+            @isDisplayed="(data:Transaction) => {CloseComponent(booleans, 'isTransactionViewDisplayed'); if (data != undefined) { UpdateTransaction(data) }}"/>
+
+            <ErrorComponent v-if="genericError.errors.length > 0" style="z-index: 2;" :errors="genericError" @isDisplayed="genericError.errors = []" :key="genericErrorKey"/>
         </div>
 
-        <div class="button-add" v-click-outside="() => isAddMenuActive = false" @click="isAddMenuActive = !isAddMenuActive">
+        <div class="button-add" v-click-outside="() => booleans.isAddMenuActive = false" @click="booleans.isAddMenuActive = !booleans.isAddMenuActive">
             <div class="dropdown-button">
                 <div class="absolute-button-add">
                     <img src="../components/imgs/plus.png" width="48" style="display: block;">
                 </div>
             </div>
-            <div class="dropdown-content" id="add-menu" :class="{'display-dropdown': isAddMenuActive}">
-                <h5 @click="isAddTransactionCompActive = true">Transaction</h5>
-                <h5 @click="isAddTransferCompActive = true">Transfer</h5>
-                <h5 @click="isAddAccountCompActive = true">Account</h5>
+            <div class="dropdown-content" id="add-menu" :class="{'display-dropdown': booleans.isAddMenuActive}">
+                <h5 @click="booleans.isAddTransactionDisplayed = true">Transaction</h5>
+                <h5 @click="booleans.isAddTransferDisplayed = true">Transfer</h5>
+                <h5 @click="booleans.isAddAccountDisplayed = true">Account</h5>
             </div>
         </div>
 
@@ -245,14 +385,21 @@ export default defineComponent({
                 <h6>Terms & Conditions</h6>
             </div>
             <div class="footer-social">
-                <img src="../components/icons/linkedin.svg" width="32" style="filter: opacity(.75);">
-                <img src="../components/icons/github.svg" width="32" style="filter: opacity(.75);">
+                <img src="../components/icons/linkedin.svg" width="32" class="img-button" @click="Redirect('https://www.linkedin.com/in/riley-juniewic-906a33197/')" 
+                style="filter: opacity(.75);">
+                <img src="../components/icons/github.svg" width="32" class="img-button" @click="Redirect('https://github.com/AmtrakBF')" 
+                style="filter: opacity(.75); border-radius: 50px;">
             </div>
         </div>
     </div>    
 </template>
 
 <style>
+.img-button:hover {
+    cursor: pointer;
+    background-image: linear-gradient(to right, var(--primary), var(--secondary));
+}
+
 .body-global {
     position: absolute;
     top: 50%;

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, type PropType } from 'vue';
 
 export default defineComponent({
 
@@ -11,13 +11,30 @@ export default defineComponent({
         backgroundColor: { type: String, default: 'rgb(255, 255, 255, .9)' },
         hoverBackgroundColor: { type: String, default: 'var(--black25)' },
         focusBorderColor: { type: String, default: 'var(--secondary)' },
-        disabledBackgroundColor: { type: String, default: 'var(--black5)' },
+        disabledBackgroundColor: { type: String, default: 'var(--black25)' },
 
         isDisabled: { type: Boolean, default: false }
     },
+    data() {
+        return {
+            selectedBackgroundColor: '',
+            selectedId: 'button'
+        }
+    },
+    mounted() {
+        if (this.isDisabled) {
+            this.selectedBackgroundColor = this.disabledBackgroundColor
+            this.selectedId = 'button-disabled'
+        } else {
+            this.selectedBackgroundColor = this.backgroundColor
+            this.selectedId = 'button'
+        }
+    },
     methods: {
         OnClick() {
-            this.$emit('onClick')
+            if (!this.isDisabled) {
+                this.$emit('onClick')
+            }
         },
     }
 })
@@ -25,11 +42,10 @@ export default defineComponent({
 
 <template>
     <div class="submit-buttons">
-        <div id="button" @click="OnClick" :disabled="isDisabled" :style="{
+        <div :id="selectedId" @click="OnClick" :style="{
         '--text-color' : color,
-        '--background-color' : backgroundColor,
+        '--background-color' : selectedBackgroundColor,
         '--hover-background-color': hoverBackgroundColor,
-        '--disabled-bg-color' : disabledBackgroundColor,
         '--focus-border-color' : focusBorderColor,
         '--border-color' : borderColor}">
             <h6>{{ title }}</h6>
@@ -47,13 +63,14 @@ export default defineComponent({
     padding: 20px;
 
     width: 100%;
+
+    user-select: none;
 }
 
-#button {
+#button, #button-disabled {
     --text-color: black;
     --background-color: white;
     --hover-background-color: grey;
-    --disabled-bg-color: grey;
     --focus-border-color: black;
     --border-color: black;
 
@@ -73,10 +90,6 @@ export default defineComponent({
 #button:hover {
     cursor: pointer;
     background-color: var(--hover-background-color);
-}
-
-#button:disabled {
-    background-color: var(--disabled-bg-color);
 }
 
 .button-parent {
