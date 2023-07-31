@@ -96,9 +96,6 @@ export default defineComponent({
             this.currentDay.setHours(parseInt(hours))
             this.currentDay.setMinutes(parseInt(mins))
 
-
-            console.log(this.currentDay)
-
             this.$emit("onUpdate", this.currentDay);
         },
 
@@ -149,6 +146,15 @@ export default defineComponent({
 
                         </div>
                         <div :key="weekKey">
+                            <div class="week">
+                                <h6 style="padding: 8px;">Sun</h6>
+                                <h6 style="padding: 8px;">Mon</h6>
+                                <h6 style="padding: 8px;">Tue</h6>
+                                <h6 style="padding: 8px;">Wed</h6>
+                                <h6 style="padding: 8px;">Thu</h6>
+                                <h6 style="padding: 8px;">Fri</h6>
+                                <h6 style="padding: 8px;">Sat</h6>
+                            </div>
                             <div class="week" v-for="week in month">
                                 <div :class="GetDayClass(day)" @click="SelectDay(day)" v-for="day in week.days">
                                     <p>{{ day.getDate() }}</p>

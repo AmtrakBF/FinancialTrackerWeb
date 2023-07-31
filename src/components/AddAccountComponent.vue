@@ -19,7 +19,7 @@ export default defineComponent({
     data() {
         return {
             name: '',
-            balance: '0.00',
+            balance: 0,
 
             nameError: {name: 'AccountName', errors: []} as ATBFError,
             balanceError: {name: 'InitialBalance', errors: []} as ATBFError,
@@ -66,7 +66,7 @@ export default defineComponent({
                     <div class="input-container">
                         <div class="input-row">
                             <h5>Initial Balance:</h5>
-                            <InputBoxComponent class="input-comp" :default-value="balance" @onUpdate="newValue => balance = newValue"/>
+                            <InputBoxComponent class="input-comp" :default-value="balance.toFixed(2)" @onUpdate="newValue => balance = newValue"/>
                         </div>
                         <div class="input-row">
                             <p></p>

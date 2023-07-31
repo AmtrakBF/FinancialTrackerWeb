@@ -24,7 +24,7 @@ export default defineComponent({
                 </div>
                 <div class="content-global">
                     <div class="input-container" v-if="errors.errors.length > 0">
-                        <h5 style="text-align: center;">{{ errors.errors }}</h5>
+                        <h5 style="text-align: center;" v-for="error in errors.errors">{{ error }}</h5>
                     </div>
                     <div class="submit-buttons">
                         <ButtonComponent title="Close" border-color="var(--error)" background-color="var(--error50)" 

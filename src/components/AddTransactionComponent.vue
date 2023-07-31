@@ -46,7 +46,7 @@ export default defineComponent({
         async submitForm() {
 
             try {
-                const response = await SavingsAccountService.PostTransaction(this.account.id, this.type.id, this.amount, this.description)
+                const response = await SavingsAccountService.PostTransaction(this.account.id, this.type.id, parseFloat(this.amount), this.description)
                 this.$emit('onSubmit', response.data)
             } catch (error) {
                 ErrorHandlingService.GetErrors(this.domErrors, error)

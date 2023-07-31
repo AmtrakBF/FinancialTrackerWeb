@@ -43,9 +43,9 @@ export default defineComponent({
             <h5 id="description" style="padding-left: 16px;">{{ transaction?.description }}</h5>
         </div>
         <div style="padding-left: 16px;">
-            <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'Transfer Out'">- ${{ transaction?.amount }}</h4>
-            <h4 :style="{ color: amountColor }" v-else>+ ${{ transaction?.amount }}</h4>
-            <p style="text-align: center;">Balance ${{ transaction.newBalance }}</p>
+            <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'TransferOut'">- ${{ transaction?.amount.toFixed(2) }}</h4>
+            <h4 :style="{ color: amountColor }" v-else>+ ${{ transaction?.amount.toFixed(2) }}</h4>
+            <p style="text-align: center;">Balance ${{ transaction.newBalance.toFixed(2) }}</p>
         </div>
     </div>
 </template>

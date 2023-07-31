@@ -32,6 +32,7 @@ export default defineComponent({
                 let response = await UserService.Login(this.email, this.password)
                 this.$emit('onSubmit', response.data)
             } catch (error) {
+                console.log(error)
                 ErrorHandlingService.GetErrors(this.domErrors, error)
             }
         }

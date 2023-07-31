@@ -16,21 +16,21 @@ export default(
             return axios.get<SavingsAccount[]>('SavingsAccount/Accounts', {withCredentials:true})
         },
 
-        PostTransaction(accountId:string, type:number, amount:string, description:string){
+        PostTransaction(accountId:string, type:number, amount:number, description:string){
             return axios.post<TransactionResponse>('SavingsAccount/NewTransaction', 
                 { accountId, type, description, amount },
                 { withCredentials: true }
             )
         },
 
-        PostTransfer(accountId:string, receiverAccountId:string, transferAmount:string, description:string){
+        PostTransfer(accountId:string, receiverAccountId:string, transferAmount:number, description:string){
             return axios.post<TransactionResponse>('SavingsAccount/Transfer', 
                 { accountId, receiverAccountId, transferAmount, description},
                 { withCredentials: true }
             )
         },
 
-        PostAccount(accountName:string, initialBalance:string) {
+        PostAccount(accountName:string, initialBalance:number) {
             return axios.post<SavingsAccount>('SavingsAccount/OpenAccount', 
                 { accountName, initialBalance},{ withCredentials: true })
         },

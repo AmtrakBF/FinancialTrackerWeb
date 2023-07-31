@@ -1,4 +1,5 @@
 import type { ATBFError } from '@/models/ATBFError';
+import { AxiosError } from 'axios';
 
 
 export default {
@@ -7,33 +8,33 @@ export default {
     },
 
     GetErrors(domErrors:ATBFError[], errors:any) {
-        if (typeof(errors) == typeof(new Error)) {
-            console.log("THROWING ERROR")
+        try {
+            errors = errors.response.data.errors
+
+            domErrors.forEach(x => {
+                x.errors = []
+                try {
+                    let currentErrors = errors[x.name]
+
+                    if (currentErrors != undefined) {
+                        x.errors.push(errors[x.name])
+                    }
+                }
+                catch {}
+            })
+        } catch (error) {
             throw errors
         }
 
-        errors = errors.response.data.errors
+        
+        
+        // if (errors['message'] === "User session invalid") {
+        //     console.log("ERROR")
+        //     throw new Error(errors['message'])
+        // }
 
-        if (errors['message'] === "User session invalid") {
-            console.log("ERROR INVALID SESSION")
-            throw new Error("User session invalid")
-        }
-
-        if (errors['message'] != undefined) {
-            console.log("ERROR")
-            throw new Error(errors['message'])
-        }
-
-        domErrors.forEach(x => {
-            x.errors = []
-            try {
-                let currentErrors = errors[x.name]
-
-                if (currentErrors != undefined) {
-                    x.errors = errors[x.name]
-                }
-            }
-            catch {}
-        })
+        // if (errors['message'] != undefined) {
+        //     throw new Error(errors['message'])
+        // }
     }
 }

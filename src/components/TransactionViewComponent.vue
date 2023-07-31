@@ -126,7 +126,7 @@ export default defineComponent({
                     <div class="input-container">
                         <div class="input-row">
                             <h5>Amount:</h5>
-                            <InputBoxComponent class="input-comp" :default-value="'$'+transaction.amount" :is-disabled="true"/>
+                            <InputBoxComponent class="input-comp" :default-value="'$'+transaction.amount.toFixed(2)" :is-disabled="true"/>
                         </div>
                         <div class="input-row">
                             <p></p>

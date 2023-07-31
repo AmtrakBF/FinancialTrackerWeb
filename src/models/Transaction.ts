@@ -3,7 +3,7 @@ export interface Transaction {
     savingsAccountId: string,
     transactionType: string,
     description: string,
-    amount: string,
-    newBalance: string,
+    amount: number,
+    newBalance: number,
     date: Date
 }
