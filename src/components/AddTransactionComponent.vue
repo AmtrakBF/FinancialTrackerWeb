@@ -1,13 +1,17 @@
 <script lang="ts">
 import type { SavingsAccount } from '@/models/SavingsAccount';
-import SavingsAccountService from '@/services/SavingsAccountService';
 import { defineComponent, type PropType } from 'vue';
+import type { ATBFError } from '@/models/ATBFError';
+
+import SavingsAccountService from '@/services/SavingsAccountService';
+import ErrorHandlingService from '@/services/ErrorHandlingService';
+
 import DropDownComponent from './common/DropDownComponent.vue';
 import InputBoxComponent from './common/InputBoxComponent.vue';
 import InputAreaComponent from './common/InputAreaComponent.vue';
 import ButtonComponent from './common/ButtonComponent.vue';
-import type { ATBFError } from '@/models/ATBFError';
-import ErrorHandlingService from '@/services/ErrorHandlingService';
+import CalendarComponent from './common/CalendarComponent.vue';
+
 
 export default defineComponent({
 
@@ -18,11 +22,13 @@ export default defineComponent({
         DropDownComponent,
         InputAreaComponent,
         InputBoxComponent,
-        ButtonComponent
+        ButtonComponent,
+        CalendarComponent
     },
     data() {
         return {
             amount: '',
+            date: new Date(),
             types: [
                 {id: 0, value: "Deposit / Add" },
                 {id: 1, value: "Withdraw / Subtract" },
@@ -35,18 +41,19 @@ export default defineComponent({
             typeError: {name: 'Type', errors: []} as ATBFError,
             amountError: {name: 'Amount', errors: []} as ATBFError,
             descriptionError: {name: 'Description', errors: []} as ATBFError,
+            dateError: {name: 'Description', errors: []} as ATBFError,
 
             domErrors: [] as ATBFError[],
         }
     },
     mounted() {
-        this.domErrors = [ this.accountError, this.typeError, this.amountError, this.descriptionError ]
+        this.domErrors = [ this.accountError, this.typeError, this.amountError, this.descriptionError, this.dateError ]
     },
     methods: {
         async submitForm() {
 
             try {
-                const response = await SavingsAccountService.PostTransaction(this.account.id, this.type.id, parseFloat(this.amount), this.description)
+                const response = await SavingsAccountService.PostTransaction(this.account.id, this.type.id, parseFloat(this.amount), this.description, this.date)
                 this.$emit('onSubmit', response.data)
             } catch (error) {
                 ErrorHandlingService.GetErrors(this.domErrors, error)
@@ -78,6 +85,17 @@ export default defineComponent({
                             <span v-if="accountError.errors.length > 0">*{{ accountError.errors[0] }}</span>
                         </div>
                     </div>
+
+                    <div class="input-container">
+                        <div class="input-row">
+                            <h5>Date:</h5>
+                            <CalendarComponent :user-date="date" @on-update="newDate => date = newDate"/>
+                        </div>
+                        <div class="input-row">
+                            <p></p>
+                            <span v-if="dateError.errors.length > 0">*{{ dateError.errors[0] }}</span>
+                        </div>
+                    </div> 
 
                     <div class="input-container">
                         <div class="input-row">

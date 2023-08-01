@@ -1,13 +1,11 @@
 import type { ATBFError } from '@/models/ATBFError';
-import { AxiosError } from 'axios';
-
 
 export default {
     ErrorKeys: {
         DefaultKey: "message" 
     },
 
-    GetErrors(domErrors:ATBFError[], errors:any) {
+    GetErrors(domErrors:ATBFError[], errors:any, throwError:boolean = true) {
         try {
             errors = errors.response.data.errors
 
@@ -26,15 +24,14 @@ export default {
             throw errors
         }
 
-        
-        
-        // if (errors['message'] === "User session invalid") {
-        //     console.log("ERROR")
-        //     throw new Error(errors['message'])
-        // }
-
-        // if (errors['message'] != undefined) {
-        //     throw new Error(errors['message'])
-        // }
+        if (throwError){
+            if (errors['message'] === "User session invalid") {
+                throw new Error(errors['message'])
+            }
+    
+            if (errors['message'] != undefined) {
+                throw new Error(errors['message'])
+            }
+        }
     }
 }

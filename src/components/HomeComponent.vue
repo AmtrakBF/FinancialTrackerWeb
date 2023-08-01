@@ -19,6 +19,7 @@ import SettingsComponent from '@/components/SettingsComponent.vue'
 import TransactionViewComponent from '@/components/TransactionViewComponent.vue'
 import ErrorHandlingService from '@/services/ErrorHandlingService';
 import ErrorComponent from '@/components/ErrorComponent.vue'
+import CurrencyService from '@/services/CurrencyService';
 
 const UserCookieName = 'UserCookie'
 
@@ -32,9 +33,10 @@ export default defineComponent({
             displaySavingsAccounts: [] as SavingsAccount[],
             selectedAccount: {} as SavingsAccount,
             selectedTransaction: {} as Transaction,
+            displayBalance: '',
 
-            genericErrorKey: 0,
-            genericError: { name: ErrorHandlingService.ErrorKeys.DefaultKey, errors:[] } as ATBFError,
+            internalErrorKey: 0,
+            internalError: { name: ErrorHandlingService.ErrorKeys.DefaultKey, errors:[] } as ATBFError,
             domErrors: [] as ATBFError[],
 
             atBottomOfPage: false,
@@ -65,34 +67,33 @@ export default defineComponent({
         ErrorComponent
     },
     async created() {
-        this.domErrors = [ this.genericError ]
+        this.domErrors = [ this.internalError ]
         await this.UpdatePageStateAsync()
+        this.displayBalance = CurrencyService.FormatNumber(this.selectedAccount.balance)
     },
     errorCaptured(err:any, instance:any, info:string) {
-        console.log("ERROR Detected")
         if (err.message == "User session invalid" || err.message == 'Request failed with status code 401') {
             this.booleans.isLoginDisplayed = true
-
-            this.genericError.errors.push("User Session Ended")
-
+            this.internalError.errors.push("User Session Ended")
             return false
         }
-
 
         return true
     },
     watch: {
-        genericError(oldErr:any, newErr:any) {
-            let err = this.genericError.errors[0]
+        'internalError.errors': function() {
+            let err = this.internalError.errors[0]
             if (err === "User session invalid" || err === 'Request failed with status code 401') {
                 this.booleans.isLoginDisplayed = true
             }
-            this.genericErrorKey++
         },
         selectedAccount(oldAccount:SavingsAccount, newAccount:SavingsAccount) {
             if (oldAccount.id != newAccount.id){
                 this.transactions = []
             }
+        },
+        'selectedAccount.balance' : function() {
+            this.displayBalance = CurrencyService.FormatNumber(this.selectedAccount.balance)
         }
     },
     methods: {
@@ -105,7 +106,7 @@ export default defineComponent({
                 })
                 this.SetNewBalanceOfTransactions()
             } catch (error) {
-                ErrorHandlingService.GetErrors(this.domErrors, error)
+                ErrorHandlingService.GetErrors(this.domErrors, error, false)
             }
         },
 
@@ -121,14 +122,19 @@ export default defineComponent({
                 }
                 this.SetNewBalanceOfTransactions()
             } catch (error) {
-                ErrorHandlingService.GetErrors(this.domErrors, error)
+                ErrorHandlingService.GetErrors(this.domErrors, error, false)
             }
         },
 
         UpdateTransaction(newTransaction:Transaction) {
             let index = this.transactions.findIndex(x => x.id === newTransaction.id)
             this.SetTransactionDate(newTransaction)
-            this.transactions[index] = newTransaction
+            if (newTransaction.date != this.transactions[index].date) {
+                this.transactions[index] = newTransaction
+                this.SortTransactions()
+            } else {
+                this.transactions[index] = newTransaction
+            }
         },
 
         async GetSavingsAccountsAsync() {
@@ -136,7 +142,7 @@ export default defineComponent({
                 let response = await SavingsAccountService.GetUserSavingsAccounts()
                 this.savingsAccounts = response.data
             } catch (error) {
-                ErrorHandlingService.GetErrors(this.domErrors, error)
+                ErrorHandlingService.GetErrors(this.domErrors, error, false)
             }
         },
 
@@ -148,7 +154,7 @@ export default defineComponent({
             } catch (error) {
                 this.booleans.isLoginDisplayed = true
                 this.booleans.isLoggedIn = false
-                ErrorHandlingService.GetErrors(this.domErrors, error)
+                ErrorHandlingService.GetErrors(this.domErrors, error, false)
             }
         },
 
@@ -165,7 +171,7 @@ export default defineComponent({
 
                 await this.UpdatePageStateAsync()
             } catch (error) {
-                ErrorHandlingService.GetErrors(this.domErrors, error)
+                ErrorHandlingService.GetErrors(this.domErrors, error, false)
             }
         },
 
@@ -197,6 +203,7 @@ export default defineComponent({
             this.selectedAccount = account
             this.displaySavingsAccounts = this.savingsAccounts.filter(x => x.id != account.id)
             await this.GetInitialTransactionsAsync(account.id)
+            this.displayBalance = CurrencyService.FormatNumber(this.selectedAccount.balance)
             
             this.RemoveUserCookie()
             this.SetUserCookie()
@@ -207,6 +214,8 @@ export default defineComponent({
                 return
             }
             
+            console.log(this.selectedAccount.balance)
+
             let rollingBalance = this.selectedAccount.balance
             this.transactions[0].newBalance = rollingBalance;
 
@@ -217,8 +226,6 @@ export default defineComponent({
                 } else if (this.transactions[x-1].transactionType == "Deposit" || this.transactions[x-1].transactionType == "TransferIn") {
                     rollingBalance = this.transactions[x-1].newBalance - this.transactions[x-1].amount
                 }
-
-                console.log(rollingBalance)
                 this.transactions[x].newBalance = rollingBalance
             }
         },
@@ -270,14 +277,20 @@ export default defineComponent({
             }
         },
 
+        SortTransactions() {
+            this.transactions.sort((a:Transaction, b:Transaction) => b.date.valueOf() - a.date.valueOf())
+            this.SetNewBalanceOfTransactions()
+        },
+
         OnAddTransaction(response:{transaction:Transaction, savingsAccount:SavingsAccount}) {
             if (response == undefined) {
                 return
             }
 
             this.SetTransactionDate(response.transaction)
-            this.transactions.unshift(response.transaction)
-            this.selectedAccount.balance = response.transaction.newBalance
+            this.transactions.push(response.transaction)
+            this.selectedAccount.balance = response.savingsAccount.balance
+            this.SortTransactions()
             this.booleans.isAddTransactionDisplayed = false
         },
 
@@ -290,6 +303,12 @@ export default defineComponent({
             this.transactions.unshift(response.transferOut)
             this.selectedAccount.balance = response.transferOut.newBalance
             this.booleans.isAddTransferDisplayed = false
+        },
+
+        onTransactionDelete(transaction:Transaction) {
+            this.transactions = this.transactions.filter(x => x.id != transaction.id)
+            this.selectedAccount.balance = transaction.newBalance
+            this.booleans.isTransactionViewDisplayed = false
         },
 
         async OnAddAccountAsync(response:SavingsAccount) {
@@ -332,7 +351,7 @@ export default defineComponent({
 
             <div class="header-title">
                 <div class="title-dropdown" @click="booleans.isTitleActive = !booleans.isTitleActive">
-                    <h4>${{ selectedAccount.balance }}</h4>
+                    <h4>{{ displayBalance }}</h4>
                     <div class="title-dropdown-wrapper" v-click-outside="() => booleans.isTitleActive = false">
                         <div class="dropdown-button">
                             <h3> {{ selectedAccount.name }}</h3>
@@ -388,9 +407,10 @@ export default defineComponent({
             <LoginComponent v-if="booleans.isLoginDisplayed" @onSubmit="response => OnLogin(response)"/>
 
             <TransactionViewComponent v-if="booleans.isTransactionViewDisplayed" :transaction="selectedTransaction" 
-            @isDisplayed="(data:Transaction) => {CloseComponent(booleans, 'isTransactionViewDisplayed'); if (data != undefined) { UpdateTransaction(data) }}"/>
+            @onSubmit="(data:Transaction) => {CloseComponent(booleans, 'isTransactionViewDisplayed'); if (data != undefined) { UpdateTransaction(data) }}"
+            @on-delete="(data:Transaction) => onTransactionDelete(data)"/>
 
-            <ErrorComponent v-if="genericError.errors.length > 0" style="z-index: 2;" :errors="genericError" @isDisplayed="genericError.errors = []" :key="genericErrorKey"/>
+            <ErrorComponent v-if="internalError.errors.length > 0" style="z-index: 2;" :errors="internalError" @isDisplayed="internalError.errors = []" :key="internalErrorKey"/>
         </div>
 
         <div class="button-add" v-click-outside="() => booleans.isAddMenuActive = false" @click="booleans.isAddMenuActive = !booleans.isAddMenuActive">

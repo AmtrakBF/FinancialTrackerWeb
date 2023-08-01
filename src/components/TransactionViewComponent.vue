@@ -20,7 +20,7 @@ export default defineComponent({
     props: {
         transaction: {type: Object as PropType<Transaction>, required: true},
     },
-    emits: ['isDisplayed'],
+    emits: ['onSubmit', 'onDelete'],
     components: {
         DropDownComponent,
         InputAreaComponent,
@@ -34,6 +34,7 @@ export default defineComponent({
             description: '',
             date: {} as Date,
             isEditMode: false,
+            isConfirmMenuOpen: false,
             saveKey: 0,
 
             month:[] as [] as {week:number, days:Date[]}[],
@@ -78,13 +79,21 @@ export default defineComponent({
         SaveTransactionEdits() {
             SavingsAccountService.PutTransaction(this.transaction.savingsAccountId, this.transaction.id, this.date, this.description)
             .then(response => {
-                this.$emit('isDisplayed', response.data)
+                this.$emit('onSubmit', response.data)
             })
             .catch(error => ErrorHandlingService.GetErrors(this.domErrors, error))
         },
 
         GetMonth(monthNum:number) : {week:number, days:Date[]}[]  {
             return DateService.GetMonth(monthNum, new Date().getFullYear())
+        },
+
+        DeleteTransaction() {
+            SavingsAccountService.DeleteTransaction(this.transaction.savingsAccountId, this.transaction.id)
+            .then(response => {
+                this.$emit('onDelete', response.data)
+            })
+            .catch(error => ErrorHandlingService.GetErrors(this.domErrors, error))
         }
     }
 })
@@ -96,7 +105,7 @@ export default defineComponent({
             <div class="container-global">
                 <div class="header-global">
                     <h2>{{transaction.transactionType}}</h2>
-                    <img @click="$emit('isDisplayed', undefined)" src="./imgs/x-icon.png" height="32" width="32">
+                    <img @click="$emit('onSubmit', undefined)" src="./imgs/x-icon.png" height="32" width="32">
                 </div>
                 <div class="content-global">
 
@@ -126,7 +135,7 @@ export default defineComponent({
                     <div class="input-container">
                         <div class="input-row">
                             <h5>Amount:</h5>
-                            <InputBoxComponent class="input-comp" :default-value="'$'+transaction.amount.toFixed(2)" :is-disabled="true"/>
+                            <InputBoxComponent class="input-comp" :default-value="transaction.amount.toFixed(2)" :is-disabled="!isEditMode"/>
                         </div>
                         <div class="input-row">
                             <p></p>
@@ -135,6 +144,7 @@ export default defineComponent({
                     </div> 
                     
                     <div class="buttons-submit">
+                        <ButtonComponent title="Delete" v-if="isTransfer()" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="isConfirmMenuOpen = true"/>
                         <ButtonComponent title="Edit" v-if="isTransfer()" background-color="var(--secondary50)" hover-background-color="var(--secondary)" @onClick="ToggleEditMode"/>
                         <ButtonComponent title="Save" background-color="var(--primary25)" hover-background-color="var(--primary)" :key="saveKey"
                          :is-disabled="!isEditMode" @onClick="SaveTransactionEdits"/>
@@ -142,6 +152,23 @@ export default defineComponent({
                 </div>
             </div>
         </div>
+
+        <div class="body-global"  v-if="isConfirmMenuOpen">
+            <div class="wrapper-global" style="width: 20%;">
+                <div class="container-global" style="background-color: var(--error50); background-image: none;">
+                    <div style="text-align: center; padding: 20px;">
+                        <h2>Confirm Delete?</h2>
+                    </div>
+                    <div class="content-global">
+                        <div class="buttons-submit">
+                            <ButtonComponent title="Cancel" v-if="isTransfer()" background-color="var(--error50)" hover-background-color="var(--error)" @onClick="isConfirmMenuOpen = false"/>
+                            <ButtonComponent title="Confirm" background-color="var(--primary50)" hover-background-color="var(--primary)" :key="saveKey" @onClick="DeleteTransaction()"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <ErrorComponent v-if="genericError.errors.length > 0" :errors="genericError" @isDisplayed="genericError.errors = []" :key="genericErrorKey"/>
     </body>
 </template>
@@ -176,7 +203,7 @@ export default defineComponent({
 
     margin: auto;
 
-    width: 50%;
+    width: 30%;
 
     position: absolute;
     top: 50%;

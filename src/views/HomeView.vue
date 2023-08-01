@@ -20,17 +20,9 @@ export default defineComponent({
             isLoginDisplayed: false
         }
     },
-    watch: {
-        genericError() {
-            console.log("HERE FOR SOME REASON")
-            this.genericErrorKey++
-        },
-    },
     errorCaptured(err:any, instance:any, info:string) {
-        console.log("ERROR Detected 22")
         this.genericError.errors.push(err.message)
         this.genericErrorKey++
-
 
         return false
     },

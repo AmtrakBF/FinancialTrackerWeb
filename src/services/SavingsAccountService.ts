@@ -16,16 +16,16 @@ export default(
             return axios.get<SavingsAccount[]>('SavingsAccount/Accounts', {withCredentials:true})
         },
 
-        PostTransaction(accountId:string, type:number, amount:number, description:string){
+        PostTransaction(accountId:string, type:number, amount:number, description:string, date:Date){
             return axios.post<TransactionResponse>('SavingsAccount/NewTransaction', 
-                { accountId, type, description, amount },
+                { accountId, date, type, description, amount},
                 { withCredentials: true }
             )
         },
 
-        PostTransfer(accountId:string, receiverAccountId:string, transferAmount:number, description:string){
+        PostTransfer(accountId:string, receiverAccountId:string, transferAmount:number, description:string, date:Date){
             return axios.post<TransactionResponse>('SavingsAccount/Transfer', 
-                { accountId, receiverAccountId, transferAmount, description},
+                { accountId, date, receiverAccountId, transferAmount, description},
                 { withCredentials: true }
             )
         },
@@ -41,6 +41,10 @@ export default(
 
         DeleteAccount(accountId:string, email:string, password:string) {
             return axios.post('SavingsAccount/CloseAccount', { accountId, loginRequest: { email, password }}, { withCredentials: true })
+        },
+
+        DeleteTransaction(savingsAccountId:string, transactionId:string) {
+            return axios.post('SavingsAccount/DeleteTransaction', { savingsAccountId, transactionId }, { withCredentials: true })
         },
 
         PutTransaction(accountId:string, transactionId:string, date:Date, description:string) {

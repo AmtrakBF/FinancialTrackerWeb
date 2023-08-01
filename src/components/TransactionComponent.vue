@@ -1,5 +1,6 @@
 <script lang="ts">
 import { type Transaction } from '@/models/Transaction';
+import CurrencyService from '@/services/CurrencyService';
 import { defineComponent, type PropType } from 'vue';
 
 
@@ -14,11 +15,19 @@ export default defineComponent({
         return {
             amountColor: "#4153E0",
             date: '',
-            time: ''
+            time: '',
+            displayAmount: '',
+            displayBalance: ''
         }
     },
     mounted() {
         this.GetAmountDisplayColor()
+        this.displayAmount = CurrencyService.FormatNumber(this.transaction.amount)
+        this.displayBalance = CurrencyService.FormatNumber(this.transaction.newBalance)
+    },
+    updated() {
+        this.displayAmount = CurrencyService.FormatNumber(this.transaction.amount)
+        this.displayBalance = CurrencyService.FormatNumber(this.transaction.newBalance)
     },
     methods: {
         GetAmountDisplayColor() {
@@ -43,9 +52,9 @@ export default defineComponent({
             <h5 id="description" style="padding-left: 16px;">{{ transaction?.description }}</h5>
         </div>
         <div style="padding-left: 16px;">
-            <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'TransferOut'">- ${{ transaction?.amount.toFixed(2) }}</h4>
-            <h4 :style="{ color: amountColor }" v-else>+ ${{ transaction?.amount.toFixed(2) }}</h4>
-            <p style="text-align: center;">Balance ${{ transaction.newBalance.toFixed(2) }}</p>
+            <h4 :style="{ color: amountColor }" v-if="transaction.transactionType === 'Withdrawal' || transaction.transactionType === 'TransferOut'">- {{ displayAmount }}</h4>
+            <h4 :style="{ color: amountColor }" v-else>+ {{ displayAmount }}</h4>
+            <p style="text-align: center;">Balance {{ displayBalance }}</p>
         </div>
     </div>
 </template>

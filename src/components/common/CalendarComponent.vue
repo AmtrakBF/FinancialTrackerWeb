@@ -140,7 +140,7 @@ export default defineComponent({
 
                             <div class="month">
                                 <h5 class="select-button" @click="GetMonth(--currentMonthIndex)">&#60;</h5>
-                                <h5 style="flex: 1; text-align: center;">{{ monthNames[currentMonthNumber] }}, {{ currentYear }}</h5>
+                                <h6 style="flex: 1; text-align: center;">{{ monthNames[currentMonthNumber] }}, {{ currentYear }}</h6>
                                 <h5 class="select-button" @click="GetMonth(++currentMonthIndex)">&#62;</h5>
                             </div>
 
@@ -192,7 +192,7 @@ export default defineComponent({
     cursor: pointer;
 }
 
-.month h5 {
+.month h6 {
     padding: 1fr;
 }
 
